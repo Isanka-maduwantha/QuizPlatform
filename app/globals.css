@@ -1,0 +1,280 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+Sinhala:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Default MindSpark Violet Theme */
+  --bg: #0D0A1A;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #2A1758 0%, #0D0A1A 70%);
+  --ink: #F5F3FF;
+  --ink-muted: #A39AC2;
+  --card: #181230;
+  --card-border: #352668;
+  --card-hover: #221844;
+  --line: #2E2259;
+  
+  /* Brand & Teams */
+  --a: #0284C7;
+  --a-glow: rgba(2, 132, 199, 0.4);
+  --b: #EC4899;
+  --b-glow: rgba(236, 72, 153, 0.4);
+  --pop: #FACC15;
+  --pop-glow: rgba(250, 204, 21, 0.4);
+  --ok: #10B981;
+  --ok-glow: rgba(16, 185, 129, 0.45);
+  --danger: #EF4444;
+
+  /* Kahoot Option Colors */
+  --opt-a: #E21B3C;
+  --opt-a-dark: #B9142F;
+  --opt-b: #1368CE;
+  --opt-b-dark: #0F52A4;
+  --opt-c: #D89E00;
+  --opt-c-dark: #AA7D00;
+  --opt-d: #26890C;
+  --opt-d-dark: #1E6C0A;
+
+  /* Shadows & Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 30px var(--pop-glow);
+
+  font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.3); transform: scale(1); }
+  50% { box-shadow: 0 0 30px rgba(250, 204, 21, 0.6); transform: scale(1.02); }
+}
+
+@keyframes urgentPulse {
+  0%, 100% { transform: scale(1); color: var(--danger); }
+  50% { transform: scale(1.08); color: #FF2E2E; filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8)); }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.85); }
+  70% { transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Typography & Layout Utilities */
+h1, h2, h3, h4, p {
+  margin: 0;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.mut {
+  color: var(--ink-muted);
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.center {
+  text-align: center;
+}
+
+/* Modern Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.25s ease;
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Modern Buttons */
+.btn {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 12px 22px;
+  background: var(--pop);
+  color: #0D0A1A;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  border: 1px solid var(--card-border);
+  box-shadow: none;
+}
+
+.btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn.ok {
+  background: var(--ok);
+  color: #FFFFFF;
+}
+
+.btn.danger {
+  background: var(--danger);
+  color: #FFFFFF;
+}
+
+.btn.ta {
+  background: var(--a);
+  color: #FFFFFF;
+}
+
+.btn.tb {
+  background: var(--b);
+  color: #FFFFFF;
+}
+
+.btn.sel {
+  outline: 3px solid var(--pop);
+  outline-offset: 2px;
+  background: var(--card-hover);
+  color: var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Form Controls */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--pop);
+  box-shadow: 0 0 0 3px var(--pop-glow);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.7;
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+}
+
+.badge.live {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #F87171;
+}
+
+.badge.live::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #EF4444;
+  box-shadow: 0 0 8px #EF4444;
+  animation: pulseGlow 1.5s infinite;
+}
+
+.badge.ok {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34D399;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

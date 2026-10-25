@@ -2,11 +2,23 @@
   !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[3]!./app/admin/admin.css ***!
   \*****************************************************************************************************************************************************************************************************************************************************************/
 .ad {
-  max-width: 1560px;
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 24px 20px;
+  background-color: var(--bg);
+  background-image: var(--bg-gradient);
   color: var(--ink);
   font-family: inherit;
+}
+
+.ad > .kb-cheatsheet,
+.ad > .ad-top,
+.ad > .ad-grid {
+  max-width: 1560px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Header & Broadcast Deck */
@@ -722,6 +734,36 @@
 
 .ans-btn.is-correct {
   border-color: #34D399;
+}
+
+.ans-btn.is-wrong {
+  border-color: #EF4444 !important;
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+.ans-wrong-hint {
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(239, 68, 68, 0.95);
+  color: #FFFFFF;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  flex: none;
+}
+
+.host-turn-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .ans-key-badge {

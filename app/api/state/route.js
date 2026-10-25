@@ -10,12 +10,18 @@ const DEF = {
 
 const withDefaults = (s) => ({
   activeTeam: 0,
+  directTeam: 0,
+  turnPhase: 'member1',
+  eliminatedOptions: [],
   round: 1,
   wrongRule: 'opponent_5',
   autoAdvance: true,
   autoAdvanceSecs: 3,
   lastAnswer: null,
   ...s,
+  eliminatedOptions: Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [],
+  turnPhase: s?.turnPhase || 'member1',
+  directTeam: s?.directTeam !== undefined ? s.directTeam : (s?.activeTeam ?? 0),
   theme: { ...DEF.theme, ...(s?.theme || {}) },
   music: { ...DEF.music, ...(s?.music || {}) },
 });
@@ -75,7 +81,10 @@ export async function POST(req) {
       s.teams[b.team].score += b.delta;
       break;
     case 'activeTeam':
-      s.activeTeam = b.team;
+      s.activeTeam = +b.team;
+      if (b.setDirect !== false && (!s.qid || s.turnPhase === 'member1')) {
+        s.directTeam = +b.team;
+      }
       break;
     case 'round':
       s.round = b.round;
@@ -91,6 +100,8 @@ export async function POST(req) {
       s.qid = null;
       s.timerEnd = null;
       s.lastAnswer = null;
+      s.eliminatedOptions = [];
+      s.turnPhase = 'member1';
       break;
     case 'subject':
       s.subject = b.subject;
@@ -98,6 +109,8 @@ export async function POST(req) {
       s.view = 'subject';
       s.qid = null;
       s.lastAnswer = null;
+      s.eliminatedOptions = [];
+      s.turnPhase = 'member1';
       break;
     case 'show':
       s.qid = b.id;
@@ -105,7 +118,14 @@ export async function POST(req) {
       s.timerEnd = null;
       s.view = 'question';
       s.lastAnswer = null;
-      if (b.team !== undefined) s.activeTeam = b.team;
+      s.eliminatedOptions = [];
+      s.turnPhase = 'member1';
+      if (b.team !== undefined) {
+        s.directTeam = +b.team;
+        s.activeTeam = +b.team;
+      } else {
+        s.directTeam = s.activeTeam ?? 0;
+      }
       break;
     case 'timer':
       s.timerEnd = Date.now() + b.seconds * 1000;
@@ -113,23 +133,99 @@ export async function POST(req) {
     case 'reveal':
       s.revealed = true;
       s.timerEnd = null;
+      s.turnPhase = 'completed';
+      if (s.qid && !s.used.includes(s.qid)) s.used.push(s.qid);
       break;
+    case 'resetChances':
+      s.eliminatedOptions = [];
+      s.turnPhase = 'member1';
+      s.activeTeam = s.directTeam ?? 0;
+      s.revealed = false;
+      s.lastAnswer = null;
+      s.timerEnd = null;
+      break;
+    case 'passTurn': {
+      if (s.view === 'question' && s.qid && !s.revealed) {
+        const round = +s.round || 1;
+        const currentPhase = s.turnPhase || 'member1';
+        const directTeam = s.directTeam !== undefined ? s.directTeam : (s.activeTeam ?? 0);
+        const oppTeam = 1 - directTeam;
+
+        if (round === 1 && currentPhase === 'member1') {
+          s.turnPhase = 'member2';
+          s.activeTeam = directTeam;
+          s.timerEnd = null;
+          s.lastAnswer = {
+            option: null,
+            correct: false,
+            team: directTeam,
+            awardedTeam: null,
+            points: 0,
+            phase: 'member2',
+            text: `Passed! Chance goes back to another member of ${s.teams[directTeam].name}`,
+          };
+        } else if ((round === 1 && currentPhase === 'member2') || (round === 2 && currentPhase === 'member1')) {
+          s.turnPhase = 'passed';
+          s.activeTeam = oppTeam;
+          s.timerEnd = null;
+          s.lastAnswer = {
+            option: null,
+            correct: false,
+            team: directTeam,
+            awardedTeam: null,
+            points: 0,
+            phase: 'passed',
+            text: `Passed! Chance passes to opposite team: ${s.teams[oppTeam].name}`,
+          };
+        } else {
+          s.revealed = true;
+          s.turnPhase = 'completed';
+          s.timerEnd = null;
+          if (!s.used.includes(s.qid)) s.used.push(s.qid);
+          s.lastAnswer = {
+            option: null,
+            correct: false,
+            team: s.activeTeam,
+            awardedTeam: null,
+            points: 0,
+            phase: 'completed',
+            text: `No answer given. Correct answer revealed.`,
+          };
+        }
+      }
+      break;
+    }
     case 'answer': {
-      // Option selected (0, 1, 2, 3) by touch or keyboard
+      if (!s.qid || s.revealed) break;
       const optIndex = +b.option;
-      const team = b.team !== undefined ? +b.team : (s.activeTeam ?? 0);
-      const opponent = 1 - team;
+      if (s.eliminatedOptions.includes(optIndex)) break;
+
+      const directTeam = s.directTeam !== undefined ? s.directTeam : (s.activeTeam ?? 0);
+      const team = s.activeTeam !== undefined ? s.activeTeam : directTeam;
+      const oppTeam = 1 - directTeam;
       const rule = b.wrongRule || s.wrongRule || 'opponent_5';
+      const round = +s.round || 1;
+      const currentPhase = s.turnPhase || 'member1';
 
       let isCorrect = false;
-      if (s.qid) {
-        const [rq] = await pool.query('SELECT correct FROM questions WHERE id=?', [s.qid]);
-        isCorrect = rq[0]?.correct === optIndex;
-        if (!s.used.includes(s.qid)) s.used.push(s.qid);
-      }
+      const [rq] = await pool.query('SELECT correct FROM questions WHERE id=?', [s.qid]);
+      isCorrect = rq[0]?.correct === optIndex;
 
       if (isCorrect) {
-        const pts = b.correctPoints ?? 10;
+        if (!s.used.includes(s.qid)) s.used.push(s.qid);
+        s.revealed = true;
+        s.timerEnd = null;
+        s.turnPhase = 'completed';
+
+        let pts = 10;
+        if (currentPhase === 'passed') {
+          if (rule === 'opponent_10') pts = 10;
+          else if (rule === 'zero') pts = 0;
+          else pts = 5; // default pass bonus
+        } else {
+          pts = b.correctPoints ?? 10;
+        }
+
         s.teams[team].score += pts;
         s.lastAnswer = {
           option: optIndex,
@@ -137,54 +233,68 @@ export async function POST(req) {
           team,
           awardedTeam: team,
           points: pts,
-          text: `Correct! +${pts} pts to ${s.teams[team].name}`,
+          phase: currentPhase,
+          text: currentPhase === 'passed'
+            ? `Correct! +${pts} bonus pts to ${s.teams[team].name}`
+            : `Correct! +${pts} pts to ${s.teams[team].name}`,
         };
       } else {
-        if (rule === 'opponent_5') {
-          s.teams[opponent].score += 5;
+        // FALSE answer
+        if (!s.eliminatedOptions.includes(optIndex)) {
+          s.eliminatedOptions.push(optIndex);
+        }
+        s.timerEnd = null;
+
+        if (round === 1 && currentPhase === 'member1') {
+          // General round: chance goes back to another member of the same team
+          s.revealed = false;
+          s.turnPhase = 'member2';
+          s.activeTeam = directTeam;
           s.lastAnswer = {
             option: optIndex,
             correct: false,
-            team,
-            awardedTeam: opponent,
-            points: 5,
-            text: `Wrong! +5 pts bonus to ${s.teams[opponent].name}`,
+            team: directTeam,
+            awardedTeam: null,
+            points: 0,
+            phase: 'member2',
+            text: `Wrong! Chance goes back to another member of ${s.teams[directTeam].name}`,
           };
-        } else if (rule === 'opponent_10') {
-          s.teams[opponent].score += 10;
+        } else if ((round === 1 && currentPhase === 'member2') || (round === 2 && currentPhase === 'member1')) {
+          // General round 2nd member wrong OR Round 2 1st attempt wrong -> go to opposite team
+          s.revealed = false;
+          s.turnPhase = 'passed';
+          s.activeTeam = oppTeam;
+
+          if (rule === 'penalty') {
+            s.teams[directTeam].score -= 5;
+          }
+
           s.lastAnswer = {
             option: optIndex,
             correct: false,
-            team,
-            awardedTeam: opponent,
-            points: 10,
-            text: `Wrong! +10 pts to ${s.teams[opponent].name}`,
-          };
-        } else if (rule === 'penalty') {
-          s.teams[team].score -= 5;
-          s.lastAnswer = {
-            option: optIndex,
-            correct: false,
-            team,
-            awardedTeam: team,
-            points: -5,
-            text: `Wrong! -5 pts penalty to ${s.teams[team].name}`,
+            team: directTeam,
+            awardedTeam: null,
+            points: 0,
+            phase: 'passed',
+            text: `Wrong! Chance passes to opposite team: ${s.teams[oppTeam].name}`,
           };
         } else {
-          // 'zero'
+          // Opposite team was also false (or all remaining options eliminated)
+          s.revealed = true;
+          s.turnPhase = 'completed';
+          if (!s.used.includes(s.qid)) s.used.push(s.qid);
+
           s.lastAnswer = {
             option: optIndex,
             correct: false,
             team,
             awardedTeam: null,
             points: 0,
-            text: `Wrong! No points awarded`,
+            phase: 'completed',
+            text: `Wrong! No points awarded. Correct answer revealed.`,
           };
         }
       }
-
-      s.revealed = true;
-      s.timerEnd = null;
       break;
     }
     case 'nextQuestion': {
@@ -197,13 +307,23 @@ export async function POST(req) {
         s.timerEnd = null;
         s.view = 'question';
         s.lastAnswer = null;
+        s.eliminatedOptions = [];
+        s.turnPhase = 'member1';
         if (b.switchTeam !== false) {
-          s.activeTeam = 1 - (s.activeTeam ?? 0);
+          s.directTeam = 1 - (s.directTeam ?? s.activeTeam ?? 0);
+          s.activeTeam = s.directTeam;
+        } else if (b.team !== undefined) {
+          s.directTeam = +b.team;
+          s.activeTeam = +b.team;
+        } else {
+          s.directTeam = s.activeTeam ?? 0;
         }
       } else {
         s.qid = null;
         s.view = 'idle';
         s.lastAnswer = null;
+        s.eliminatedOptions = [];
+        s.turnPhase = 'member1';
       }
       break;
     }
@@ -213,6 +333,8 @@ export async function POST(req) {
       s.view = 'idle';
       s.qid = null;
       s.lastAnswer = null;
+      s.eliminatedOptions = [];
+      s.turnPhase = 'member1';
       break;
     case 'rapid':
       s.view = 'rapid';
@@ -259,6 +381,9 @@ export async function POST(req) {
       s.qid = null;
       s.timerEnd = null;
       s.activeTeam = 0;
+      s.directTeam = 0;
+      s.turnPhase = 'member1';
+      s.eliminatedOptions = [];
       s.lastAnswer = null;
       break;
   }

@@ -1,6 +1,9 @@
 "use client";
 import "./display.css";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { getThemeVars } from "@/lib/theme";
+import DisplayHeader from "./components/DisplayHeader";
+import DisplayScoreboard from "./components/DisplayScoreboard";
 
 // Format seconds into M:SS or SS
 const fmt = (s) => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -70,8 +73,6 @@ const SFX = {
     });
   },
 };
-
-const hide = (e) => (e.currentTarget.style.display = "none");
 
 // Kahoot Iconic Shapes
 const SHAPES = [
@@ -208,14 +209,27 @@ export default function Display() {
     const oldState = p.state;
     const newState = d.state;
 
-    // Revealed answer
-    if (!oldState.revealed && newState.revealed) {
-      if (newState.lastAnswer?.correct === false) {
-        SFX.buzz();
-      } else {
+    // Check if an answer attempt was made
+    const oldAns = oldState.lastAnswer;
+    const newAns = newState.lastAnswer;
+    const answerSubmitted =
+      newAns &&
+      (!oldAns ||
+        oldAns.option !== newAns.option ||
+        oldAns.phase !== newAns.phase ||
+        oldAns.correct !== newAns.correct);
+
+    if (answerSubmitted) {
+      if (newAns.correct) {
         SFX.chime();
         fireConfetti();
+      } else {
+        SFX.buzz();
       }
+    }
+    // Final reveal triggered without new answer object (e.g. host spacebar reveal)
+    else if (!oldState.revealed && newState.revealed) {
+      SFX.chime();
     }
     // Winner screen
     else if (oldState.view !== "winner" && newState.view === "winner") {
@@ -277,15 +291,12 @@ export default function Display() {
   const runnerUpTeam = T[0].score > T[1].score ? T[1] : T[0];
   const activeTeamIdx = s.activeTeam ?? 0;
   const activeTeam = T[activeTeamIdx];
+  const directTeamIdx = s.directTeam !== undefined ? s.directTeam : activeTeamIdx;
+  const directTeam = T[directTeamIdx];
+  const turnPhase = s.turnPhase || "member1";
+  const eliminated = Array.isArray(s.eliminatedOptions) ? s.eliminatedOptions : [];
 
-  const vars = {
-    "--a": th.a || "#0284C7",
-    "--b": th.b || "#EC4899",
-    "--pop": th.pop || "#FACC15",
-    "--bg": th.bg || "#0D0A1A",
-    "--ink": th.ink || "#F5F3FF",
-    "--card": th.card || "#181230",
-  };
+  const vars = getThemeVars(th);
 
   // Timer circle metrics
   const totalTimerDuration = 30; // standard question timer
@@ -314,69 +325,23 @@ export default function Display() {
         </button>
       )}
 
-      {/* Top Header */}
-      <header className="disp-header">
-        <div className="brand-section">
-          <div className="brand-icon">⚡</div>
-          <div>
-            <div className="brand-title">MindSpark</div>
-            <div className="brand-sub">Live Quiz Arena</div>
-          </div>
-        </div>
+      <DisplayHeader
+        isFullscreen={isFullscreen}
+        armed={armed}
+        onToggleFullscreen={toggleFullscreen}
+        onToggleAudio={() => {
+          setArmed(!armed);
+          if (!armed) getAudioContext();
+        }}
+      />
 
-        <div className="logos">
-          <img src="/logos/school.png" alt="School logo" onError={hide} />
-          <img src="/logos/event.png" alt="Event logo" onError={hide} />
-          <img src="/logos/campus.png" alt="Campus logo" onError={hide} />
-        </div>
-
-        <div className="header-actions">
-          <button
-            className="icon-btn"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            onClick={toggleFullscreen}
-          >
-            {isFullscreen ? "🗗" : "⛶"}
-          </button>
-          <button
-            className="icon-btn"
-            title={armed ? "Sound Enabled" : "Sound Muted"}
-            onClick={() => {
-              setArmed(!armed);
-              if (!armed) getAudioContext();
-            }}
-          >
-            {armed ? "🔊" : "🔇"}
-          </button>
-        </div>
-      </header>
-
-      {/* Kahoot-style Scoreboard with Active Turn Pulsing */}
-      <div className="sb">
-        {T.map((team, idx) => {
-          const isLeader = !isTie && team.score > T[1 - idx].score;
-          const isTurn = s.view === "question" && activeTeamIdx === idx;
-          return (
-            <div
-              key={idx}
-              className={`tm t${idx} ${isLeader ? "leading" : ""} ${isTurn ? "active-turn" : ""}`}
-            >
-              <div className="tm-info">
-                <div className="tm-avatar">{idx === 0 ? "A" : "B"}</div>
-                <div className="tm-details">
-                  <span className="tm-name">{team.name}</span>
-                  {isTurn && <span className="turn-pill">🎯 Active Answering</span>}
-                  {isLeader && !isTurn && <span className="tm-status">👑 Leader</span>}
-                </div>
-              </div>
-              <div className="tm-score-wrap">
-                <b>{team.score}</b>
-                <span className="tm-pts">pts</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <DisplayScoreboard
+        teams={T}
+        isTie={isTie}
+        view={s.view}
+        activeTeamIdx={activeTeamIdx}
+        turnPhase={turnPhase}
+      />
 
       {/* Dynamic Game Stage */}
       <section className="stage">
@@ -415,16 +380,40 @@ export default function Display() {
                 <span className="round-pill">
                   {q.rnd === 1 ? "Round 1: General Knowledge" : `Round 2: ${s.subject || "Subject"}`}
                 </span>
-                {activeTeam && (
+                {turnPhase === "member1" && directTeam && (
                   <span
                     className="round-pill"
                     style={{
-                      background: activeTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                      background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
                       borderColor: "rgba(255, 255, 255, 0.4)",
                       boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
                     }}
                   >
-                    🎯 Direct Question for: {activeTeam.name}
+                    🎯 Question for: {directTeam.name} (Member 1)
+                  </span>
+                )}
+                {turnPhase === "member2" && directTeam && (
+                  <span
+                    className="round-pill pill-bounce"
+                    style={{
+                      background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                      borderColor: "var(--pop)",
+                      boxShadow: "0 0 20px var(--pop-glow)",
+                    }}
+                  >
+                    🔄 2nd Chance: {directTeam.name} (Another Member)
+                  </span>
+                )}
+                {turnPhase === "passed" && activeTeam && (
+                  <span
+                    className="round-pill pill-bounce"
+                    style={{
+                      background: activeTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                      borderColor: "var(--pop)",
+                      boxShadow: "0 0 25px var(--pop-glow)",
+                    }}
+                  >
+                    ⚡ Passed to: {activeTeam.name} (Opposite Team)
                   </span>
                 )}
               </div>
@@ -449,8 +438,8 @@ export default function Display() {
               )}
             </div>
 
-            {/* Answer Result Banner if revealed */}
-            {s.revealed && s.lastAnswer && (
+            {/* Answer Result Banner if an answer attempt or reveal occurred */}
+            {s.lastAnswer && (
               <div className={`result-banner ${s.lastAnswer.correct ? "correct" : "wrong"}`}>
                 <span>{s.lastAnswer.correct ? "🎉" : "❌"}</span>
                 <span>{s.lastAnswer.text}</span>
@@ -463,41 +452,21 @@ export default function Display() {
 
             <div className="opts-grid">
               {(q.options || []).map((opt, idx) => {
+                const isEliminated = eliminated.includes(idx);
                 const isCorrect = s.revealed && idx === q.correct;
-                const isSelectedWrong =
-                  s.revealed &&
-                  s.lastAnswer &&
-                  !s.lastAnswer.correct &&
-                  s.lastAnswer.option === idx;
-                const isOtherWrong = s.revealed && idx !== q.correct && !isSelectedWrong;
+                const isRevealedWrong = s.revealed && idx !== q.correct && !isEliminated;
                 const shape = SHAPES[idx] || { shape: "●", letter: String.fromCharCode(65 + idx) };
 
                 return (
                   <div
                     key={idx}
-                    className={`opt-card opt-${idx} ${isCorrect ? "revealed-correct" : ""} ${isSelectedWrong ? "revealed-wrong" : ""} ${isOtherWrong ? "revealed-wrong" : ""}`}
-                    style={isSelectedWrong ? { border: "3px solid #EF4444", opacity: 0.6 } : undefined}
+                    className={`opt-card opt-${idx} ${isCorrect ? "revealed-correct" : ""} ${isEliminated ? "is-eliminated" : ""} ${isRevealedWrong ? "revealed-wrong" : ""}`}
                   >
                     <div className="opt-shape">
                       <span>{shape.shape}</span>
                       <span className="opt-letter">{shape.letter}</span>
                     </div>
                     <span className="opt-text">{opt}</span>
-                    {isSelectedWrong && (
-                      <span
-                        style={{
-                          marginLeft: "auto",
-                          background: "#EF4444",
-                          color: "#FFF",
-                          fontSize: 12,
-                          fontWeight: 900,
-                          padding: "4px 8px",
-                          borderRadius: 9999,
-                        }}
-                      >
-                        CHOSEN ✗
-                      </span>
-                    )}
                   </div>
                 );
               })}

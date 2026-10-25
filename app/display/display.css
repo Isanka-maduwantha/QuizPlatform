@@ -642,6 +642,44 @@
   transform: scale(0.98);
 }
 
+.opt-card.is-eliminated {
+  border-color: #EF4444 !important;
+  opacity: 0.35 !important;
+  filter: grayscale(80%) !important;
+  transform: scale(0.97);
+  animation: shakeWrong 0.5s ease-in-out;
+}
+
+.opt-card.is-eliminated::after {
+  content: "❌ FALSE";
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes shakeWrong {
+  0%, 100% { transform: scale(0.97) translateX(0); }
+  20%, 60% { transform: scale(0.97) translateX(-7px); }
+  40%, 80% { transform: scale(0.97) translateX(7px); }
+}
+
+.pill-bounce {
+  animation: pillPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes pillPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 /* Rapid Fire Layout */
 .rapid-box {
   background: var(--card);

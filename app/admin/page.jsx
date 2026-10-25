@@ -1,6 +1,10 @@
 "use client";
 import "./admin.css";
 import { useCallback, useEffect, useState, useRef } from "react";
+import AdminPanel from "./components/AdminPanel";
+import QuestionListItem from "./components/QuestionListItem";
+import ThemePanel from "./components/ThemePanel";
+import { getThemeVars } from "@/lib/theme";
 
 const post = (url, body, method = "POST") =>
   fetch(url, {
@@ -11,46 +15,6 @@ const post = (url, body, method = "POST") =>
 
 const blank = { rnd: 1, subject_id: "", text: "", o: ["", "", "", ""], correct: 0, answer_text: "" };
 const PANELS = ["live", "teams", "look", "r1", "r2", "r3", "manage"];
-
-const COLOR_FIELDS = [
-  { key: "a", label: "Team A Primary" },
-  { key: "b", label: "Team B Primary" },
-  { key: "pop", label: "Accent / Glow" },
-  { key: "bg", label: "Background" },
-  { key: "ink", label: "Text Color" },
-  { key: "card", label: "Card Surface" },
-];
-
-const PRESETS = [
-  {
-    name: "MindSpark Violet",
-    theme: { a: "#0284C7", b: "#EC4899", pop: "#FACC15", bg: "#0D0A1A", ink: "#F5F3FF", card: "#181230" },
-  },
-  {
-    name: "Kahoot Classic",
-    theme: { a: "#1368CE", b: "#E21B3C", pop: "#FFA602", bg: "#46178F", ink: "#FFFFFF", card: "#2C0D5E" },
-  },
-  {
-    name: "Midnight Cyber",
-    theme: { a: "#00F0FF", b: "#FF007A", pop: "#FFE600", bg: "#080B10", ink: "#E2E8F0", card: "#111827" },
-  },
-  {
-    name: "Royal Navy & Gold",
-    theme: { a: "#2563EB", b: "#D97706", pop: "#FBBF24", bg: "#0F172A", ink: "#F8FAFC", card: "#1E293B" },
-  },
-  {
-    name: "Emerald Academy",
-    theme: { a: "#059669", b: "#D97706", pop: "#FDE047", bg: "#022C22", ink: "#ECFDF5", card: "#064E3B" },
-  },
-  {
-    name: "Crimson Energy",
-    theme: { a: "#E11D48", b: "#EA580C", pop: "#FBBF24", bg: "#18080C", ink: "#FFF1F2", card: "#2E1119" },
-  },
-  {
-    name: "Studio Clean Light",
-    theme: { a: "#2563EB", b: "#DB2777", pop: "#D97706", bg: "#F8FAFC", ink: "#0F172A", card: "#FFFFFF" },
-  },
-];
 
 const TITLES = {
   live: "⚡ Live Host Deck",
@@ -94,6 +58,7 @@ export default function Admin() {
   const [shut, setShut] = useState({});
   const [drag, setDrag] = useState(null);
   const [draft, setDraft] = useState(null);
+  const themeVars = getThemeVars(draft || d?.state?.theme || {});
 
   // Auto-advance countdown state
   const [autoCountdown, setAutoCountdown] = useState(null);
@@ -197,6 +162,10 @@ export default function Admin() {
   const q = d?.q;
   const activeTeamIdx = s?.activeTeam ?? 0;
   const activeTeam = T[activeTeamIdx];
+  const directTeamIdx = s?.directTeam !== undefined ? s.directTeam : activeTeamIdx;
+  const directTeam = T[directTeamIdx];
+  const turnPhase = s?.turnPhase || "member1";
+  const eliminated = Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [];
   const activeRound = s?.round ?? 1;
   const activeSubject = s?.subject;
   const wrongRule = s?.wrongRule || "opponent_5";
@@ -216,40 +185,55 @@ export default function Admin() {
   const submitAnswer = useCallback(
     async (optIndex) => {
       if (!s || !s.qid || s.revealed) return;
+      if (s.eliminatedOptions?.includes(optIndex)) return;
 
-      // Send answer to server (evaluates right/wrong, awards marks automatically)
-      await act("answer", {
+      const res = await post("/api/state", {
+        action: "answer",
         option: optIndex,
         team: activeTeamIdx,
         wrongRule,
         correctPoints: 10,
       });
 
-      // If auto-advance is enabled, start countdown to auto-load next question & switch team
-      if (autoAdvance) {
-        let sec = autoAdvanceSecs;
-        setAutoCountdown(sec);
-        if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+      if (res.ok) {
+        const j = await res.json();
+        if (j.state) {
+          setD((prevD) => (prevD ? { ...prevD, state: j.state } : null));
 
-        autoTimerRef.current = setInterval(() => {
-          sec -= 1;
-          if (sec <= 0) {
-            clearInterval(autoTimerRef.current);
-            autoTimerRef.current = null;
-            setAutoCountdown(null);
-            // Load next question and switch participating school
-            act("nextQuestion", {
-              rnd: activeRound,
-              subject: activeSubject,
-              switchTeam: true,
-            });
-          } else {
+          // If answer was evaluated as final (revealed = true), start auto-advance countdown if enabled
+          if (j.state.revealed && autoAdvance) {
+            let sec = autoAdvanceSecs;
             setAutoCountdown(sec);
+            if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+
+            autoTimerRef.current = setInterval(() => {
+              sec -= 1;
+              if (sec <= 0) {
+                clearInterval(autoTimerRef.current);
+                autoTimerRef.current = null;
+                setAutoCountdown(null);
+                act("nextQuestion", {
+                  rnd: activeRound,
+                  subject: activeSubject,
+                  switchTeam: true,
+                });
+              } else {
+                setAutoCountdown(sec);
+              }
+            }, 1000);
+          } else if (!j.state.revealed) {
+            // Not revealed! Chances remain (another member or opposite team)
+            if (autoTimerRef.current) {
+              clearInterval(autoTimerRef.current);
+              autoTimerRef.current = null;
+            }
+            setAutoCountdown(null);
           }
-        }, 1000);
+        }
       }
+      load();
     },
-    [s, activeTeamIdx, wrongRule, autoAdvance, autoAdvanceSecs, activeRound, activeSubject]
+    [s, activeTeamIdx, wrongRule, autoAdvance, autoAdvanceSecs, activeRound, activeSubject, act, load]
   );
 
   // Skip countdown and immediately advance
@@ -264,7 +248,7 @@ export default function Admin() {
       subject: activeSubject,
       switchTeam: true,
     });
-  }, [activeRound, activeSubject]);
+  }, [activeRound, activeSubject, act]);
 
   // Keyboard shortcuts listener for live host desk
   useEffect(() => {
@@ -278,24 +262,29 @@ export default function Admin() {
       // A, B, C, D Answer Keys
       if (state.view === "question" && state.qid && !state.revealed) {
         const key = e.key.toLowerCase();
-        if (key === "a" || key === "1") {
+        if ((key === "a" || key === "1") && !state.eliminatedOptions?.includes(0)) {
           e.preventDefault();
           submitAnswer(0);
           return;
         }
-        if (key === "b" || key === "2") {
+        if ((key === "b" || key === "2") && !state.eliminatedOptions?.includes(1)) {
           e.preventDefault();
           submitAnswer(1);
           return;
         }
-        if (key === "c" || key === "3") {
+        if ((key === "c" || key === "3") && !state.eliminatedOptions?.includes(2)) {
           e.preventDefault();
           submitAnswer(2);
           return;
         }
-        if (key === "d" || key === "4") {
+        if ((key === "d" || key === "4") && !state.eliminatedOptions?.includes(3)) {
           e.preventDefault();
           submitAnswer(3);
+          return;
+        }
+        if (key === "p") {
+          e.preventDefault();
+          act("passTurn");
           return;
         }
       }
@@ -330,38 +319,42 @@ export default function Admin() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [d, activeTeamIdx, submitAnswer, skipToNextQuestion]);
+  }, [d, activeTeamIdx, submitAnswer, skipToNextQuestion, act]);
 
   if (!d) {
     return (
-      <main className="wrap" style={{ textAlign: "center", padding: "100px 20px" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
-        <h2>Loading Host Studio...</h2>
+      <main className="ad" style={themeVars}>
+        <div className="wrap" style={{ textAlign: "center", padding: "100px 20px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
+          <h2>Loading Host Studio...</h2>
+        </div>
       </main>
     );
   }
 
   if (!d.admin) {
     return (
-      <main className="wrap" style={{ maxWidth: 440, margin: "80px auto" }}>
-        <div className="card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
-          <h1 style={{ fontSize: 26, marginBottom: 8 }}>MindSpark Admin</h1>
-          <p className="mut" style={{ marginBottom: 20 }}>
-            Enter admin password to access host control console.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input
-              type="password"
-              placeholder="Admin Password"
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && login()}
-            />
-            <button className="btn" onClick={login}>
-              Log in to Host Studio
-            </button>
-            {msg && <span style={{ color: "var(--danger)", fontSize: 14 }}>{msg}</span>}
+      <main className="ad" style={themeVars}>
+        <div className="wrap" style={{ maxWidth: 440, margin: "80px auto" }}>
+          <div className="card" style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+            <h1 style={{ fontSize: 26, marginBottom: 8 }}>MindSpark Admin</h1>
+            <p className="mut" style={{ marginBottom: 20 }}>
+              Enter admin password to access host control console.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="password"
+                placeholder="Admin Password"
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && login()}
+              />
+              <button className="btn" onClick={login}>
+                Log in to Host Studio
+              </button>
+              {msg && <span style={{ color: "var(--danger)", fontSize: 14 }}>{msg}</span>}
+            </div>
           </div>
         </div>
       </main>
@@ -416,18 +409,12 @@ export default function Admin() {
   const showItem = (x) => {
     const isUsed = used(x.id);
     return (
-      <div className={`ad-item ${isUsed ? "done" : ""}`} key={x.id}>
-        <span>
-          {isUsed ? "✓ " : ""}
-          {x.text}
-        </span>
-        <button
-          className="btn ghost"
-          onClick={() => act("show", { id: x.id, team: activeTeamIdx })}
-        >
-          {isUsed ? "Show Again" : "Show on Screen"}
-        </button>
-      </div>
+      <QuestionListItem
+        key={x.id}
+        question={x}
+        isUsed={isUsed}
+        onShow={() => act("show", { id: x.id, team: activeTeamIdx })}
+      />
     );
   };
 
@@ -573,19 +560,45 @@ export default function Admin() {
           <div>
             <div className="ad-q-preview">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <span className="badge ok">
                     {q.rnd === 1 ? "Round 1" : `Round 2: ${s.subject}`}
                   </span>
-                  <span
-                    className="badge"
-                    style={{
-                      background: activeTeamIdx === 0 ? "var(--a)" : "var(--b)",
-                      color: "#FFF",
-                    }}
-                  >
-                    Question for: {activeTeam?.name}
-                  </span>
+                  {turnPhase === "member1" && (
+                    <span
+                      className="badge"
+                      style={{
+                        background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                        color: "#FFF",
+                      }}
+                    >
+                      🎯 Direct Turn: {directTeam?.name} (Member 1)
+                    </span>
+                  )}
+                  {turnPhase === "member2" && (
+                    <span
+                      className="badge"
+                      style={{
+                        background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                        color: "#FFF",
+                        border: "2px solid var(--pop)",
+                      }}
+                    >
+                      🔄 2nd Chance: {directTeam?.name} (Another Member)
+                    </span>
+                  )}
+                  {turnPhase === "passed" && (
+                    <span
+                      className="badge"
+                      style={{
+                        background: activeTeamIdx === 0 ? "var(--a)" : "var(--b)",
+                        color: "#FFF",
+                        border: "2px solid var(--pop)",
+                      }}
+                    >
+                      ⚡ Passed Turn: {activeTeam?.name} (Bonus Chance)
+                    </span>
+                  )}
                 </div>
 
                 {left !== null && (
@@ -597,6 +610,24 @@ export default function Admin() {
 
               <p className="ad-q">{q.text}</p>
 
+              {/* Host Turn Phase Status Bar */}
+              <div className="host-turn-status-banner">
+                <div>
+                  <span style={{ opacity: 0.8 }}>Current Answering Turn: </span>
+                  <span style={{ color: activeTeamIdx === 0 ? "var(--a)" : "var(--b)", fontSize: 16 }}>
+                    {activeTeam?.name}
+                  </span>
+                  <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.7 }}>
+                    ({turnPhase === "member1" ? "Member 1 • 10 pts" : turnPhase === "member2" ? "Another Member • 10 pts" : "Opposite Team • Bonus Chance"})
+                  </span>
+                </div>
+                {s.revealed ? (
+                  <span className="badge ok">✓ Question Completed</span>
+                ) : (
+                  <span className="badge">Active Question</span>
+                )}
+              </div>
+
               {/* Answer Pad: Touch buttons or Keyboard keys A, B, C, D */}
               <div style={{ marginTop: 14 }}>
                 <span style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)" }}>
@@ -606,28 +637,34 @@ export default function Admin() {
                 <div className="answer-touch-pad">
                   {(q.options || []).map((opt, k) => {
                     const isCorrect = k === q.correct;
+                    const isEliminated = (s.eliminatedOptions || []).includes(k);
                     const optCfg = OPT_CONFIG[k] || { letter: String.fromCharCode(65 + k), shape: "●", gradient: "var(--card)" };
                     const isRevealed = s.revealed;
 
                     return (
                       <button
                         key={k}
-                        className={`ans-btn ${isRevealed && isCorrect ? "is-correct" : ""}`}
+                        className={`ans-btn ${isRevealed && isCorrect ? "is-correct" : ""} ${isEliminated ? "is-wrong" : ""}`}
                         style={{
                           background: optCfg.gradient,
-                          opacity: isRevealed && !isCorrect ? 0.35 : 1,
+                          opacity: isEliminated ? 0.35 : (isRevealed && !isCorrect ? 0.35 : 1),
                         }}
                         onClick={() => submitAnswer(k)}
-                        disabled={isRevealed}
+                        disabled={isRevealed || isEliminated}
                       >
                         <div className="ans-key-badge">
                           <span>{optCfg.shape}</span>
                           <span style={{ fontSize: 11, marginLeft: 2 }}>{optCfg.letter}</span>
                         </div>
                         <span className="ans-text">{opt}</span>
-                        {isCorrect && (
+                        {isEliminated && (
+                          <span className="ans-wrong-hint">
+                            ❌ FALSE
+                          </span>
+                        )}
+                        {isCorrect && !isEliminated && (
                           <span className="ans-correct-hint">
-                            ✓ CORRECT
+                            ✓ CORRECT {isRevealed ? "" : "(Host Hint)"}
                           </span>
                         )}
                       </button>
@@ -661,9 +698,32 @@ export default function Admin() {
                 15s Timer
               </button>
               {!s.revealed ? (
-                <button className="btn ok" onClick={() => act("reveal")} style={{ marginLeft: "auto" }}>
-                  💡 Reveal Answer Only [Space]
-                </button>
+                <>
+                  <button
+                    className="btn ghost"
+                    style={{ borderColor: "var(--pop)", color: "var(--pop)" }}
+                    onClick={() => act("passTurn")}
+                    title="Pass to next chance/member or opposite team"
+                  >
+                    {turnPhase === "member1" && activeRound === 1
+                      ? "🔄 Pass to Member 2 [P]"
+                      : turnPhase === "member2" || activeRound === 2
+                      ? "⚡ Pass to Opposite Team [P]"
+                      : "❌ No Answer / End Turn [P]"}
+                  </button>
+                  {s.eliminatedOptions && s.eliminatedOptions.length > 0 && (
+                    <button
+                      className="btn ghost"
+                      onClick={() => act("resetChances")}
+                      title="Clear wrong answers and reset to Member 1"
+                    >
+                      ↺ Reset Chances
+                    </button>
+                  )}
+                  <button className="btn ok" onClick={() => act("reveal")} style={{ marginLeft: "auto" }}>
+                    💡 Reveal Answer Only [Space]
+                  </button>
+                </>
               ) : (
                 <button className="btn" onClick={skipToNextQuestion} style={{ marginLeft: "auto" }}>
                   Next Question ⏭️ [Space]
@@ -767,142 +827,15 @@ export default function Admin() {
 
     // THEME STUDIO & SOUND
     look: (
-      <>
-        <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 8 }}>
-          Choose A Theme Preset
-        </p>
-        <div className="theme-presets">
-          {PRESETS.map((p) => {
-            const isActive = th.bg === p.theme.bg && th.a === p.theme.a;
-            return (
-              <button
-                key={p.name}
-                className={`preset-chip ${isActive ? "active" : ""}`}
-                onClick={() => setDraft(p.theme)}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    backgroundColor: p.theme.pop,
-                  }}
-                />
-                {p.name}
-              </button>
-            );
-          })}
-        </div>
-
-        <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", margin: "16px 0 8px" }}>
-          Customize Brand Colors
-        </p>
-        <div className="theme-swatches">
-          {COLOR_FIELDS.map(({ key, label }) => (
-            <div key={key} className="theme-swatch-box">
-              <span className="theme-swatch-label">{label}</span>
-              <div className="theme-input-group">
-                <input
-                  type="color"
-                  value={th[key] || "#FFFFFF"}
-                  onChange={(e) => setDraft({ ...th, [key]: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={th[key] || ""}
-                  onChange={(e) => setDraft({ ...th, [key]: e.target.value })}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Live Mini Preview Card */}
-        <div
-          className="theme-preview-card"
-          style={{
-            backgroundColor: th.bg || "#0D0A1A",
-            color: th.ink || "#F5F3FF",
-            borderColor: th.card || "#181230",
-          }}
-        >
-          <div className="theme-preview-header">Live Theme Preview</div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-            <span style={{ padding: "4px 10px", borderRadius: 8, background: th.a, color: "#FFF", fontSize: 12, fontWeight: 800 }}>
-              {T[0].name} (10 pts)
-            </span>
-            <span style={{ padding: "4px 10px", borderRadius: 8, background: th.b, color: "#FFF", fontSize: 12, fontWeight: 800 }}>
-              {T[1].name} (20 pts)
-            </span>
-          </div>
-          <div
-            style={{
-              padding: 12,
-              borderRadius: 12,
-              backgroundColor: th.card || "#181230",
-              border: `1px solid ${th.pop}44`,
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>
-              Sample Question on Screen?
-            </div>
-            <div className="preview-grid">
-              <div className="preview-opt" style={{ background: "linear-gradient(135deg, #E21B3C, #B9142F)" }}>
-                ▲ Option A
-              </div>
-              <div className="preview-opt" style={{ background: "linear-gradient(135deg, #1368CE, #0F52A4)" }}>
-                ◆ Option B
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="ad-row">
-          <button
-            className="btn ok"
-            onClick={async () => {
-              await act("theme", { theme: th });
-              setDraft(null);
-            }}
-          >
-            Apply Theme to Display Screen
-          </button>
-          {draft && (
-            <button className="btn ghost" onClick={() => setDraft(null)}>
-              Discard Changes
-            </button>
-          )}
-        </div>
-
-        {/* Audio Deck */}
-        <div className="audio-deck">
-          <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 10 }}>
-            Audio & Sound FX Deck
-          </p>
-          <div className="ad-row">
-            <button
-              className={`btn ${mu.on ? "ok" : "ghost"}`}
-              onClick={() => act("music", { music: { ...mu, on: !mu.on } })}
-            >
-              🎵 Background Music: {mu.on ? "ON" : "OFF"}
-            </button>
-            <button className="btn ghost" onClick={() => setVol(mu.volume - 0.1)}>
-              −
-            </button>
-            <b>{Math.round(mu.volume * 100)}%</b>
-            <button className="btn ghost" onClick={() => setVol(mu.volume + 0.1)}>
-              +
-            </button>
-            <button
-              className={`btn ${mu.sfx ? "ok" : "ghost"}`}
-              onClick={() => act("music", { music: { ...mu, sfx: !mu.sfx } })}
-            >
-              🔔 SFX: {mu.sfx ? "ON" : "OFF"}
-            </button>
-          </div>
-        </div>
-      </>
+      <ThemePanel
+        theme={th}
+        draft={draft}
+        setDraft={setDraft}
+        teams={T}
+        music={mu}
+        onAction={act}
+        onVolumeChange={setVol}
+      />
     ),
 
     // ROUND 1: GENERAL KNOWLEDGE
@@ -1109,58 +1042,31 @@ export default function Admin() {
     const title = TITLES[id];
 
     return (
-      <section
+      <AdminPanel
         key={id}
-        className={`ad-panel ${WIDE[id] ? "wide" : ""} ${drag === id ? "dragging" : ""}`}
+        id={id}
+        title={title}
+        wide={WIDE[id]}
+        isDragging={drag === id}
+        isClosed={closed}
+        orderIndex={i}
+        orderLength={order.length}
         onDragOver={(e) => e.preventDefault()}
         onDrop={() => drop(id)}
+        onDragStart={() => setDrag(id)}
+        onDragEnd={() => setDrag(null)}
+        onMove={(direction) => move(id, direction)}
+        onToggle={() => toggle(id)}
       >
-        <header
-          className="ad-head"
-          draggable
-          onDragStart={() => setDrag(id)}
-          onDragEnd={() => setDrag(null)}
-        >
-          <span className="ad-grip" aria-hidden="true">
-            ⠿
-          </span>
-          <h2>{title}</h2>
-          <div className="ad-tools">
-            <button
-              className="ad-ic"
-              onClick={() => move(id, -1)}
-              disabled={i === 0}
-              title="Move Up"
-            >
-              ↑
-            </button>
-            <button
-              className="ad-ic"
-              onClick={() => move(id, 1)}
-              disabled={i === order.length - 1}
-              title="Move Down"
-            >
-              ↓
-            </button>
-            <button
-              className="ad-ic"
-              onClick={() => toggle(id)}
-              aria-expanded={!closed}
-              title={closed ? "Expand" : "Collapse"}
-            >
-              {closed ? "+" : "−"}
-            </button>
-          </div>
-        </header>
-        {!closed && <div className="ad-body">{BODIES[id]}</div>}
-      </section>
+        {BODIES[id]}
+      </AdminPanel>
     );
   };
 
   const isLiveQuestion = s.view === "question" || s.view === "rapid";
 
   return (
-    <main className="ad">
+    <main className="ad" style={themeVars}>
       {/* Keyboard Shortcuts Helper Bar */}
       <div className="kb-cheatsheet">
         <span>⚡ Host Shortcuts:</span>

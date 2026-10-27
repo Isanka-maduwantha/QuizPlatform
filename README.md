@@ -10,7 +10,13 @@
 
 ---
 
-## 🎮 1. Kahoot-Inspired Projector Display (`page.jsx`)
+## 🧮 1. Host Scoring Rules
+
+The Live Host Deck includes a visual **Scoring rules** editor. Hosts can set points for correct and rapid-fire answers, configure an optional penalty, choose what happens after a wrong answer, and set the bonus for a correct answer after the turn passes to the opponent. Select **Save rules** to apply the settings. Point values are whole numbers from 0 to 10,000.
+
+---
+
+## 🎮 2. Kahoot-Inspired Projector Display (`page.jsx`)
 
 * **Iconic 4-Color Option Grid:**
   * **Option A:** Crimson Red with Triangle ▲
@@ -39,7 +45,7 @@
 
 ---
 
-## 🎨 2. Theme Customizer Studio (`page.jsx`)
+## 🎨 3. Theme Customizer Studio (`page.jsx`)
 
 Located directly in the **"Theme Studio & Sound"** panel in the Admin Console:
 

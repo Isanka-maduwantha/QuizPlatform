@@ -9,6 +9,47 @@ const DEF = {
   music: { on: false, volume: 0.4, sfx: true },
 };
 
+const DEFAULT_SCORING_RULES = {
+  correctPoints: 10,
+  wrongAction: 'standard',
+  wrongPenalty: 0,
+  passBonus: 5,
+  rapidFirePoints: 5,
+};
+
+const WRONG_ACTIONS = new Set(['standard', 'opponent', 'reveal']);
+const POINT_LIMIT = 10000;
+
+function pointsOrDefault(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    ? Math.min(POINT_LIMIT, Math.max(0, Math.round(parsed)))
+    : fallback;
+}
+
+function legacyScoringRules(wrongRule) {
+  if (wrongRule === 'opponent_10') return { ...DEFAULT_SCORING_RULES, passBonus: 10 };
+  if (wrongRule === 'zero') return { ...DEFAULT_SCORING_RULES, passBonus: 0 };
+  if (wrongRule === 'penalty') {
+    return { ...DEFAULT_SCORING_RULES, wrongPenalty: 5 };
+  }
+  return DEFAULT_SCORING_RULES;
+}
+
+function normalizeScoringRules(candidate, fallback = DEFAULT_SCORING_RULES) {
+  const rules = candidate && typeof candidate === 'object' && !Array.isArray(candidate)
+    ? candidate
+    : {};
+
+  return {
+    correctPoints: pointsOrDefault(rules.correctPoints, fallback.correctPoints),
+    wrongAction: WRONG_ACTIONS.has(rules.wrongAction) ? rules.wrongAction : fallback.wrongAction,
+    wrongPenalty: pointsOrDefault(rules.wrongPenalty, fallback.wrongPenalty),
+    passBonus: pointsOrDefault(rules.passBonus, fallback.passBonus),
+    rapidFirePoints: pointsOrDefault(rules.rapidFirePoints, fallback.rapidFirePoints),
+  };
+}
+
 const withDefaults = (s) => {
   const savedTheme = s?.theme || {};
   const hasLegacyDefault =
@@ -35,6 +76,10 @@ const withDefaults = (s) => {
     directTeam: s?.directTeam !== undefined ? s.directTeam : (s?.activeTeam ?? 0),
     theme: { ...DEF.theme, ...(hasLegacyDefault ? {} : savedTheme) },
     music: { ...DEF.music, ...(s?.music || {}) },
+    scoringRules: normalizeScoringRules(
+      s?.scoringRules || legacyScoringRules(s?.wrongRule),
+      DEFAULT_SCORING_RULES
+    ),
   };
 };
 
@@ -103,7 +148,17 @@ export async function POST(req) {
       if (b.subject !== undefined) s.subject = b.subject;
       break;
     case 'settings':
-      if (b.wrongRule !== undefined) s.wrongRule = b.wrongRule;
+      if (b.scoringRules !== undefined) {
+        s.scoringRules = normalizeScoringRules(
+          { ...s.scoringRules, ...b.scoringRules },
+          s.scoringRules
+        );
+      } else if (b.wrongRule !== undefined) {
+        s.scoringRules = normalizeScoringRules(
+          legacyScoringRules(b.wrongRule),
+          s.scoringRules
+        );
+      }
       if (b.autoAdvance !== undefined) s.autoAdvance = b.autoAdvance;
       if (b.autoAdvanceSecs !== undefined) s.autoAdvanceSecs = b.autoAdvanceSecs;
       break;
@@ -215,7 +270,7 @@ export async function POST(req) {
       const directTeam = s.directTeam !== undefined ? s.directTeam : (s.activeTeam ?? 0);
       const team = s.activeTeam !== undefined ? s.activeTeam : directTeam;
       const oppTeam = 1 - directTeam;
-      const rule = b.wrongRule || s.wrongRule || 'opponent_5';
+      const rules = s.scoringRules;
       const round = +s.round || 1;
       const currentPhase = s.turnPhase || 'member1';
 
@@ -229,14 +284,7 @@ export async function POST(req) {
         s.timerEnd = null;
         s.turnPhase = 'completed';
 
-        let pts = 10;
-        if (currentPhase === 'passed') {
-          if (rule === 'opponent_10') pts = 10;
-          else if (rule === 'zero') pts = 0;
-          else pts = 5; // default pass bonus
-        } else {
-          pts = b.correctPoints ?? 10;
-        }
+        const pts = currentPhase === 'passed' ? rules.passBonus : rules.correctPoints;
 
         s.teams[team].score += pts;
         s.lastAnswer = {
@@ -256,8 +304,42 @@ export async function POST(req) {
           s.eliminatedOptions.push(optIndex);
         }
         s.timerEnd = null;
+        if (rules.wrongPenalty > 0) {
+          s.teams[team].score -= rules.wrongPenalty;
+        }
 
-        if (round === 1 && currentPhase === 'member1') {
+        if (rules.wrongAction === 'reveal' ||
+          (rules.wrongAction === 'opponent' && currentPhase === 'passed')) {
+          s.revealed = true;
+          s.turnPhase = 'completed';
+          if (!s.used.includes(s.qid)) s.used.push(s.qid);
+          s.lastAnswer = {
+            option: optIndex,
+            correct: false,
+            team,
+            awardedTeam: null,
+            points: -rules.wrongPenalty,
+            phase: 'completed',
+            text: rules.wrongPenalty > 0
+              ? `Wrong! −${rules.wrongPenalty} pts. Correct answer revealed.`
+              : `Wrong! No points awarded. Correct answer revealed.`,
+          };
+        } else if (rules.wrongAction === 'opponent') {
+          s.revealed = false;
+          s.turnPhase = 'passed';
+          s.activeTeam = oppTeam;
+          s.lastAnswer = {
+            option: optIndex,
+            correct: false,
+            team,
+            awardedTeam: null,
+            points: -rules.wrongPenalty,
+            phase: 'passed',
+            text: rules.wrongPenalty > 0
+              ? `Wrong! −${rules.wrongPenalty} pts. Chance passes to ${s.teams[oppTeam].name}.`
+              : `Wrong! Chance passes to ${s.teams[oppTeam].name}.`,
+          };
+        } else if (round === 1 && currentPhase === 'member1') {
           // General round: chance goes back to another member of the same team
           s.revealed = false;
           s.turnPhase = 'member2';
@@ -267,9 +349,11 @@ export async function POST(req) {
             correct: false,
             team: directTeam,
             awardedTeam: null,
-            points: 0,
+            points: -rules.wrongPenalty,
             phase: 'member2',
-            text: `Wrong! Chance goes back to another member of ${s.teams[directTeam].name}`,
+            text: rules.wrongPenalty > 0
+              ? `Wrong! −${rules.wrongPenalty} pts. Chance goes back to another member of ${s.teams[directTeam].name}.`
+              : `Wrong! Chance goes back to another member of ${s.teams[directTeam].name}`,
           };
         } else if ((round === 1 && currentPhase === 'member2') || (round === 2 && currentPhase === 'member1')) {
           // General round 2nd member wrong OR Round 2 1st attempt wrong -> go to opposite team
@@ -277,18 +361,16 @@ export async function POST(req) {
           s.turnPhase = 'passed';
           s.activeTeam = oppTeam;
 
-          if (rule === 'penalty') {
-            s.teams[directTeam].score -= 5;
-          }
-
           s.lastAnswer = {
             option: optIndex,
             correct: false,
             team: directTeam,
             awardedTeam: null,
-            points: 0,
+            points: -rules.wrongPenalty,
             phase: 'passed',
-            text: `Wrong! Chance passes to opposite team: ${s.teams[oppTeam].name}`,
+            text: rules.wrongPenalty > 0
+              ? `Wrong! −${rules.wrongPenalty} pts. Chance passes to opposite team: ${s.teams[oppTeam].name}`
+              : `Wrong! Chance passes to opposite team: ${s.teams[oppTeam].name}`,
           };
         } else {
           // Opposite team was also false (or all remaining options eliminated)
@@ -301,9 +383,11 @@ export async function POST(req) {
             correct: false,
             team,
             awardedTeam: null,
-            points: 0,
+            points: -rules.wrongPenalty,
             phase: 'completed',
-            text: `Wrong! No points awarded. Correct answer revealed.`,
+            text: rules.wrongPenalty > 0
+              ? `Wrong! −${rules.wrongPenalty} pts. Correct answer revealed.`
+              : `Wrong! No points awarded. Correct answer revealed.`,
           };
         }
       }
@@ -359,7 +443,7 @@ export async function POST(req) {
       break;
     case 'rok':
       if (live) {
-        s.teams[b.team].score += 5;
+        s.teams[b.team].score += s.scoringRules.rapidFirePoints;
         s.got[b.team]++;
         if (!s.used.includes(s.qid)) s.used.push(s.qid);
         s.qid = await nextRapid(s);

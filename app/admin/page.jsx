@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import AdminPanel from "./components/AdminPanel";
 import QuestionListItem from "./components/QuestionListItem";
 import ThemePanel from "./components/ThemePanel";
+import ScoringRulesPanel from "./components/ScoringRulesPanel";
 import { getThemeVars } from "@/lib/theme";
 
 const post = (url, body, method = "POST") =>
@@ -148,6 +149,7 @@ export default function Admin() {
       }
     }
     load();
+    return r.ok;
   };
 
   const login = async () => {
@@ -168,7 +170,13 @@ export default function Admin() {
   const eliminated = Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [];
   const activeRound = s?.round ?? 1;
   const activeSubject = s?.subject;
-  const wrongRule = s?.wrongRule || "opponent_5";
+  const scoringRules = s?.scoringRules || {
+    correctPoints: 10,
+    wrongAction: "standard",
+    wrongPenalty: 0,
+    passBonus: 5,
+    rapidFirePoints: 5,
+  };
   const autoAdvance = s?.autoAdvance ?? true;
   const autoAdvanceSecs = s?.autoAdvanceSecs ?? 3;
 
@@ -191,8 +199,6 @@ export default function Admin() {
         action: "answer",
         option: optIndex,
         team: activeTeamIdx,
-        wrongRule,
-        correctPoints: 10,
       });
 
       if (res.ok) {
@@ -233,7 +239,7 @@ export default function Admin() {
       }
       load();
     },
-    [s, activeTeamIdx, wrongRule, autoAdvance, autoAdvanceSecs, activeRound, activeSubject, act, load]
+    [s, activeTeamIdx, autoAdvance, autoAdvanceSecs, activeRound, activeSubject, act, load]
   );
 
   // Skip countdown and immediately advance
@@ -527,22 +533,8 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* 3. Host Policy & Auto-Advance Settings */}
+        {/* 3. Scoring Rules & Auto-Advance Settings */}
         <div className="host-policy-bar">
-          <div className="host-policy-item">
-            <span style={{ fontWeight: 700 }}>If Answer is Wrong:</span>
-            <select
-              value={wrongRule}
-              onChange={(e) => act("settings", { wrongRule: e.target.value })}
-              style={{ padding: "4px 8px", fontSize: 13 }}
-            >
-              <option value="opponent_5">Pass to Opponent (+5 pts bonus)</option>
-              <option value="opponent_10">Full marks to Opponent (+10 pts)</option>
-              <option value="zero">No points awarded (0 pts)</option>
-              <option value="penalty">Penalty to answering team (-5 pts)</option>
-            </select>
-          </div>
-
           <div className="host-policy-item">
             <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
               <input
@@ -554,7 +546,6 @@ export default function Admin() {
             </label>
           </div>
         </div>
-
         {/* 4. Active Question Preview & Interactive Answer Pad (A, B, C, D) */}
         {s.view === "question" && q ? (
           <div>
@@ -749,10 +740,10 @@ export default function Admin() {
             </div>
             <div className="ad-row">
               <button className="btn ta" onClick={() => act("rok", { team: 0 })}>
-                ✓ {T[0].name} +5 [1]
+                ✓ {T[0].name} +{scoringRules.rapidFirePoints} [1]
               </button>
               <button className="btn tb" onClick={() => act("rok", { team: 1 })}>
-                ✓ {T[1].name} +5 [2]
+                ✓ {T[1].name} +{scoringRules.rapidFirePoints} [2]
               </button>
               <button className="btn" onClick={() => act("rpass")}>
                 Pass [0]
@@ -1116,7 +1107,13 @@ export default function Admin() {
       </header>
 
       <div className="ad-primary-grid">
-        {renderPanel("look", "ad-theme-panel", true)}
+        <div className="ad-side-column">
+          {renderPanel("look", "ad-theme-panel", true)}
+          <ScoringRulesPanel
+            rules={scoringRules}
+            onSave={(rules) => act("settings", { scoringRules: rules })}
+          />
+        </div>
         {renderPanel("live", "ad-live-panel", true)}
       </div>
       <div className="ad-grid">

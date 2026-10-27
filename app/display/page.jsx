@@ -76,7 +76,7 @@ const SFX = {
 
 // Kahoot Iconic Shapes
 const SHAPES = [
-  { shape: "▲", letter: "A" },
+  { shape: "⬣", letter: "A" },
   { shape: "◆", letter: "B" },
   { shape: "●", letter: "C" },
   { shape: "■", letter: "D" },

@@ -776,6 +776,10 @@
   justify-content: space-between;
   align-items: center;
   user-select: none;
+  width: 100%;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
 }
 
 .school-card:hover {
@@ -850,6 +854,170 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.host-policy-item input {
+  width: auto;
+  accent-color: var(--pop);
+}
+
+.live-round-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.live-subject-picker {
+  margin: 4px 0;
+}
+
+.live-rapid-duration,
+.rapid-fire-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.live-rapid-duration input,
+.rapid-fire-duration input {
+  width: 90px;
+}
+
+.live-team-turn h3 {
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.live-team-turn h3 span {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.school-card-hint {
+  font-size: 12px;
+}
+
+.active-question-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.active-question-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.host-turn-label {
+  opacity: 0.8;
+}
+
+.host-turn-team {
+  font-size: 16px;
+}
+
+.host-turn-phase {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.active-answer-pad {
+  margin-top: 14px;
+}
+
+.active-answer-help {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ans-key-letter {
+  margin-left: 2px;
+  font-size: 11px;
+}
+
+.action-pass {
+  border-color: var(--pop) !important;
+  color: var(--pop) !important;
+}
+
+.action-push {
+  margin-left: auto;
+}
+
+.rapid-fire-time {
+  font-size: 36px;
+}
+
+.rapid-fire-answer {
+  color: var(--ok);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.rapid-fire-end {
+  margin-left: auto;
+}
+
+.host-standby {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.host-standby p + p {
+  margin-top: 10px;
+}
+
+.host-standby .btn {
+  margin-top: 18px;
+}
+
+.round-search {
+  margin-bottom: 12px;
+}
+
+.round-search input {
+  width: 100%;
+}
+
+.subject-round-hint {
+  padding: 12px;
+}
+
+.rapid-fire-remaining {
+  display: block;
+  margin-top: 12px;
+}
+
+.question-bank-add {
+  margin-top: 14px;
+}
+
+.question-bank-subject-add {
+  margin-top: 20px;
+}
+
+.question-bank-message {
+  color: var(--pop);
+  font-weight: 700;
+}
+
+.team-score-actions {
+  margin-top: 18px;
+}
+
+.team-reset {
+  margin-left: auto;
 }
 
 .scoring-rules {

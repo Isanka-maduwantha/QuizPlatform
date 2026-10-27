@@ -2,9 +2,16 @@
 import "./admin.css";
 import { useCallback, useEffect, useState, useRef } from "react";
 import AdminPanel from "./components/AdminPanel";
-import QuestionListItem from "./components/QuestionListItem";
 import ThemePanel from "./components/ThemePanel";
 import ScoringRulesPanel from "./components/ScoringRulesPanel";
+import LiveHostDeck from "./components/LiveHostDeck";
+import TeamScorePanel from "./components/TeamScorePanel";
+import QuestionBankPanel from "./components/QuestionBankPanel";
+import {
+  GeneralRoundPanel,
+  RapidFireSetupPanel,
+  SubjectRoundPanel,
+} from "./components/QuestionRoundPanels";
 import { getThemeVars } from "@/lib/theme";
 
 const post = (url, body, method = "POST") =>
@@ -36,14 +43,6 @@ const VIEWS = {
   rapidEnd: "Rapid Fire Result",
   winner: "Winner Podium Celebration",
 };
-
-// Kahoot option styles for Host Deck
-const OPT_CONFIG = [
-  { letter: "A", shape: "▲", gradient: "linear-gradient(135deg, #E21B3C 0%, #B9142F 100%)" },
-  { letter: "B", shape: "◆", gradient: "linear-gradient(135deg, #1368CE 0%, #0F52A4 100%)" },
-  { letter: "C", shape: "●", gradient: "linear-gradient(135deg, #D89E00 0%, #AA7D00 100%)" },
-  { letter: "D", shape: "■", gradient: "linear-gradient(135deg, #26890C 0%, #1E6C0A 100%)" },
-];
 
 export default function Admin() {
   const [d, setD] = useState(null);
@@ -412,411 +411,36 @@ export default function Admin() {
     }
   };
 
-  const showItem = (x) => {
-    const isUsed = used(x.id);
-    return (
-      <QuestionListItem
-        key={x.id}
-        question={x}
-        isUsed={isUsed}
-        onShow={() => act("show", { id: x.id, team: activeTeamIdx })}
-      />
-    );
-  };
-
   const BODIES = {
-    // ⚡ LIVE HOST DECK
     live: (
-      <div className="live-controls-wrap">
-        {/* 1. Round Type Selector */}
-        <div className="round-selector-bar">
-          <div className="round-pills">
-            <button
-              className={`round-pill-btn ${activeRound === 1 ? "active" : ""}`}
-              onClick={() => act("round", { round: 1 })}
-            >
-              🌍 Round 1: General
-            </button>
-            <button
-              className={`round-pill-btn ${activeRound === 2 ? "active" : ""}`}
-              onClick={() => {
-                const sub = activeSubject || qs.subjects[0]?.name || "Physics";
-                act("round", { round: 2, subject: sub });
-              }}
-            >
-              🎯 Round 2: Subject
-            </button>
-            <button
-              className={`round-pill-btn ${activeRound === 3 ? "active" : ""}`}
-              onClick={() => act("round", { round: 3 })}
-            >
-              ⚡ Round 3: Rapid Fire
-            </button>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="badge">
-              📚 {remainingQuestions} Questions Left
-            </span>
-            <button
-              className="btn"
-              style={{ padding: "8px 16px", fontSize: 13 }}
-              onClick={() => {
-                if (activeRound === 3) {
-                  act("rapid", { seconds: secs });
-                } else {
-                  act("nextQuestion", { rnd: activeRound, subject: activeSubject });
-                }
-              }}
-            >
-              {activeRound === 3 ? "Launch Rapid Fire ⚡" : "Next Question ⏩"}
-            </button>
-          </div>
-        </div>
-
-        {/* Round 2 Subject Picker */}
-        {activeRound === 2 && (
-          <div className="ad-row" style={{ margin: "4px 0" }}>
-            <span className="mut" style={{ fontSize: 13, fontWeight: 700 }}>
-              Select Subject:
-            </span>
-            {qs.subjects.map((sub) => (
-              <button
-                key={sub.id}
-                className={`btn ${activeSubject === sub.name ? "sel" : "ghost"}`}
-                style={{ padding: "6px 14px", fontSize: 13 }}
-                onClick={() => act("round", { round: 2, subject: sub.name })}
-              >
-                {sub.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 2. Participating School Turn Selector */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)" }}>
-              Select Participating School (Answering Turn) <span style={{ opacity: 0.7 }}>[Press Tab to toggle]</span>
-            </span>
-          </div>
-
-          <div className="school-cards-grid">
-            {T.map((t, idx) => {
-              const isActive = activeTeamIdx === idx;
-              return (
-                <div
-                  key={idx}
-                  className={`school-card ${isActive ? "active" : ""}`}
-                  onClick={() => act("activeTeam", { team: idx })}
-                >
-                  <div className="school-card-info">
-                    <div
-                      className="school-card-avatar"
-                      style={{ background: idx === 0 ? "var(--a)" : "var(--b)" }}
-                    >
-                      {idx === 0 ? "A" : "B"}
-                    </div>
-                    <div className="school-card-details">
-                      <span className="school-card-name">{t.name}</span>
-                      {isActive ? (
-                        <span className="school-card-badge">🎯 Active Turn (Answering)</span>
-                      ) : (
-                        <span className="mut" style={{ fontSize: 12 }}>Tap to set turn</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="school-card-score">{t.score} pts</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. Scoring Rules & Auto-Advance Settings */}
-        <div className="host-policy-bar">
-          <div className="host-policy-item">
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={autoAdvance}
-                onChange={(e) => act("settings", { autoAdvance: e.target.checked })}
-              />
-              <span style={{ fontWeight: 700 }}>Auto-load next question (3s delay)</span>
-            </label>
-          </div>
-        </div>
-        {/* 4. Active Question Preview & Interactive Answer Pad (A, B, C, D) */}
-        {s.view === "question" && q ? (
-          <div>
-            <div className="ad-q-preview">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <span className="badge ok">
-                    {q.rnd === 1 ? "Round 1" : `Round 2: ${s.subject}`}
-                  </span>
-                  {turnPhase === "member1" && (
-                    <span
-                      className="badge"
-                      style={{
-                        background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
-                        color: "#FFF",
-                      }}
-                    >
-                      🎯 Direct Turn: {directTeam?.name} (Member 1)
-                    </span>
-                  )}
-                  {turnPhase === "member2" && (
-                    <span
-                      className="badge"
-                      style={{
-                        background: directTeamIdx === 0 ? "var(--a)" : "var(--b)",
-                        color: "#FFF",
-                        border: "2px solid var(--pop)",
-                      }}
-                    >
-                      🔄 2nd Chance: {directTeam?.name} (Another Member)
-                    </span>
-                  )}
-                  {turnPhase === "passed" && (
-                    <span
-                      className="badge"
-                      style={{
-                        background: activeTeamIdx === 0 ? "var(--a)" : "var(--b)",
-                        color: "#FFF",
-                        border: "2px solid var(--pop)",
-                      }}
-                    >
-                      ⚡ Passed Turn: {activeTeam?.name} (Bonus Chance)
-                    </span>
-                  )}
-                </div>
-
-                {left !== null && (
-                  <span className="ad-time" style={{ color: left <= 5 ? "var(--danger)" : "var(--pop)" }}>
-                    ⏱️ {left}s
-                  </span>
-                )}
-              </div>
-
-              <p className="ad-q">{q.text}</p>
-
-              {/* Host Turn Phase Status Bar */}
-              <div className="host-turn-status-banner">
-                <div>
-                  <span style={{ opacity: 0.8 }}>Current Answering Turn: </span>
-                  <span style={{ color: activeTeamIdx === 0 ? "var(--a)" : "var(--b)", fontSize: 16 }}>
-                    {activeTeam?.name}
-                  </span>
-                  <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.7 }}>
-                    ({turnPhase === "member1" ? "Member 1 • 10 pts" : turnPhase === "member2" ? "Another Member • 10 pts" : "Opposite Team • Bonus Chance"})
-                  </span>
-                </div>
-                {s.revealed ? (
-                  <span className="badge ok">✓ Question Completed</span>
-                ) : (
-                  <span className="badge">Active Question</span>
-                )}
-              </div>
-
-              {/* Answer Pad: Touch buttons or Keyboard keys A, B, C, D */}
-              <div style={{ marginTop: 14 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)" }}>
-                  Select Answer by Touch or Keyboard [A, B, C, D]
-                </span>
-
-                <div className="answer-touch-pad">
-                  {(q.options || []).map((opt, k) => {
-                    const isCorrect = k === q.correct;
-                    const isEliminated = (s.eliminatedOptions || []).includes(k);
-                    const optCfg = OPT_CONFIG[k] || { letter: String.fromCharCode(65 + k), shape: "●", gradient: "var(--card)" };
-                    const isRevealed = s.revealed;
-
-                    return (
-                      <button
-                        key={k}
-                        className={`ans-btn ${isRevealed && isCorrect ? "is-correct" : ""} ${isEliminated ? "is-wrong" : ""}`}
-                        style={{
-                          background: optCfg.gradient,
-                          opacity: isEliminated ? 0.35 : (isRevealed && !isCorrect ? 0.35 : 1),
-                        }}
-                        onClick={() => submitAnswer(k)}
-                        disabled={isRevealed || isEliminated}
-                      >
-                        <div className="ans-key-badge">
-                          <span>{optCfg.shape}</span>
-                          <span style={{ fontSize: 11, marginLeft: 2 }}>{optCfg.letter}</span>
-                        </div>
-                        <span className="ans-text">{opt}</span>
-                        {isEliminated && (
-                          <span className="ans-wrong-hint">
-                            ❌ FALSE
-                          </span>
-                        )}
-                        {isCorrect && !isEliminated && (
-                          <span className="ans-correct-hint">
-                            ✓ CORRECT {isRevealed ? "" : "(Host Hint)"}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Auto Advance Countdown Bar if triggered */}
-              {autoCountdown !== null && (
-                <div className="auto-advance-bar">
-                  <div className="auto-advance-text">
-                    <span>⏱️</span>
-                    <span>
-                      Answer evaluated! Loading next question for {T[1 - activeTeamIdx]?.name} in {autoCountdown}s...
-                    </span>
-                  </div>
-                  <button className="btn" style={{ padding: "6px 14px", fontSize: 13 }} onClick={skipToNextQuestion}>
-                    Skip Countdown & Load Now ⏭️
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Actions Row */}
-            <div className="ad-row">
-              <button className="btn" onClick={() => act("timer", { seconds: 30 })}>
-                ⏱️ Start 30s Timer [T]
-              </button>
-              <button className="btn ghost" onClick={() => act("timer", { seconds: 15 })}>
-                15s Timer
-              </button>
-              {!s.revealed ? (
-                <>
-                  <button
-                    className="btn ghost"
-                    style={{ borderColor: "var(--pop)", color: "var(--pop)" }}
-                    onClick={() => act("passTurn")}
-                    title="Pass to next chance/member or opposite team"
-                  >
-                    {turnPhase === "member1" && activeRound === 1
-                      ? "🔄 Pass to Member 2 [P]"
-                      : turnPhase === "member2" || activeRound === 2
-                      ? "⚡ Pass to Opposite Team [P]"
-                      : "❌ No Answer / End Turn [P]"}
-                  </button>
-                  {s.eliminatedOptions && s.eliminatedOptions.length > 0 && (
-                    <button
-                      className="btn ghost"
-                      onClick={() => act("resetChances")}
-                      title="Clear wrong answers and reset to Member 1"
-                    >
-                      ↺ Reset Chances
-                    </button>
-                  )}
-                  <button className="btn ok" onClick={() => act("reveal")} style={{ marginLeft: "auto" }}>
-                    💡 Reveal Answer Only [Space]
-                  </button>
-                </>
-              ) : (
-                <button className="btn" onClick={skipToNextQuestion} style={{ marginLeft: "auto" }}>
-                  Next Question ⏭️ [Space]
-                </button>
-              )}
-            </div>
-          </div>
-        ) : s.view === "rapid" ? (
-          <div>
-            <div className="ad-row">
-              <span className="ad-time" style={{ fontSize: 36 }}>
-                ⏱️ {left ?? 0}s
-              </span>
-              <span className="badge">
-                {T[0].name}: {got[0]} correct | {T[1].name}: {got[1]} correct
-              </span>
-            </div>
-            <div className="ad-q-preview">
-              <p className="ad-q">{q ? q.text : "No more questions in this round"}</p>
-              <p style={{ fontSize: 18, color: "var(--ok)", fontWeight: 800 }}>
-                Answer: {q?.answer_text}
-              </p>
-            </div>
-            <div className="ad-row">
-              <button className="btn ta" onClick={() => act("rok", { team: 0 })}>
-                ✓ {T[0].name} +{scoringRules.rapidFirePoints} [1]
-              </button>
-              <button className="btn tb" onClick={() => act("rok", { team: 1 })}>
-                ✓ {T[1].name} +{scoringRules.rapidFirePoints} [2]
-              </button>
-              <button className="btn" onClick={() => act("rpass")}>
-                Pass [0]
-              </button>
-              <button className="btn danger" onClick={() => act("rend")} style={{ marginLeft: "auto" }}>
-                End Rapid Fire
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ textAlign: "center", padding: "24px 16px" }}>
-            <p className="mut" style={{ fontSize: 16, marginBottom: 14 }}>
-              Current Display Screen: <b>{VIEWS[s.view] || s.view}</b>
-            </p>
-            <p className="mut" style={{ fontSize: 14, marginBottom: 18 }}>
-              Select a round and school above, then click <b>"Next Question ⏩"</b> to display the first question on screen!
-            </p>
-            <button
-              className="btn"
-              onClick={() => act("nextQuestion", { rnd: activeRound, subject: activeSubject })}
-            >
-              Launch First Question ⏩
-            </button>
-          </div>
-        )}
-      </div>
+      <LiveHostDeck
+        state={s}
+        question={q}
+        teams={T}
+        subjects={qs.subjects}
+        activeTeamIndex={activeTeamIdx}
+        activeTeam={activeTeam}
+        directTeamIndex={directTeamIdx}
+        directTeam={directTeam}
+        turnPhase={turnPhase}
+        round={activeRound}
+        subject={activeSubject}
+        remainingQuestions={remainingQuestions}
+        seconds={secs}
+        setSeconds={setSecs}
+        secondsLeft={left}
+        correctCounts={got}
+        scoringRules={scoringRules}
+        autoAdvance={autoAdvance}
+        autoCountdown={autoCountdown}
+        viewLabels={VIEWS}
+        onAction={act}
+        onAnswer={submitAnswer}
+        onNextQuestion={skipToNextQuestion}
+        onSkipCountdown={skipToNextQuestion}
+      />
     ),
-
-    // TEAMS & SCORES
-    teams: (
-      <>
-        {T.map((t, i) => (
-          <div className="ad-team" key={i}>
-            <input
-              defaultValue={t.name}
-              onBlur={(e) =>
-                act("names", {
-                  names: [i === 0 ? e.target.value : T[0].name, i === 1 ? e.target.value : T[1].name],
-                })
-              }
-              aria-label={`Team ${i + 1} Name`}
-            />
-            <strong>{t.score}</strong>
-            <button className="btn ghost" onClick={() => act("adj", { team: i, delta: 10 })}>
-              +10
-            </button>
-            <button className="btn ghost" onClick={() => act("adj", { team: i, delta: 5 })}>
-              +5
-            </button>
-            <button className="btn ghost" onClick={() => act("adj", { team: i, delta: -5 })}>
-              −5
-            </button>
-          </div>
-        ))}
-        <div className="ad-row" style={{ marginTop: 18 }}>
-          <button className="btn ghost" onClick={() => act("idle")}>
-            📺 Show Lobby / Scores
-          </button>
-          <button className="btn" onClick={() => act("win")}>
-            🏆 Show Winner Podium
-          </button>
-          <button
-            className="btn ghost danger"
-            onClick={() => confirm("Reset all scores and question history?") && act("reset")}
-            style={{ marginLeft: "auto" }}
-          >
-            Reset Match
-          </button>
-        </div>
-      </>
-    ),
-
-    // THEME STUDIO & SOUND
+    teams: <TeamScorePanel teams={T} onAction={act} />,
     look: (
       <ThemePanel
         theme={th}
@@ -828,202 +452,53 @@ export default function Admin() {
         onVolumeChange={setVol}
       />
     ),
-
-    // ROUND 1: GENERAL KNOWLEDGE
     r1: (
-      <div>
-        <div style={{ marginBottom: 12 }}>
-          <input
-            type="text"
-            placeholder="Search Round 1 questions..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            style={{ width: "100%" }}
-          />
-        </div>
-        <div className="ad-list">{byRnd(1).map(showItem)}</div>
-      </div>
+      <GeneralRoundPanel
+        questions={qs.questions}
+        filter={searchFilter}
+        onFilterChange={setSearchFilter}
+        isUsed={used}
+        onShowQuestion={(id) => act("show", { id, team: activeTeamIdx })}
+      />
     ),
-
-    // ROUND 2: SUBJECT CHALLENGE
     r2: (
-      <>
-        <div className="ad-row">
-          {qs.subjects.map((x) => (
-            <button
-              key={x.id}
-              className={`btn ${s.subject === x.name ? "sel" : "ghost"}`}
-              onClick={() => act("subject", { subject: x.name })}
-            >
-              🎯 {x.name}
-            </button>
-          ))}
-        </div>
-        <div className="ad-list">
-          {s.subject ? (
-            byRnd(2, s.subject).map(showItem)
-          ) : (
-            <p className="mut" style={{ padding: 12 }}>
-              Select a subject above to display on screen and show questions.
-            </p>
-          )}
-        </div>
-      </>
+      <SubjectRoundPanel
+        questions={qs.questions}
+        subjects={qs.subjects}
+        activeSubject={s.subject}
+        filter={searchFilter}
+        isUsed={used}
+        onSelectSubject={(subject) => act("subject", { subject })}
+        onShowQuestion={(id) => act("show", { id, team: activeTeamIdx })}
+      />
     ),
-
-    // ROUND 3: RAPID FIRE
     r3: (
-      <>
-        <div className="ad-row">
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            Timer Seconds:
-            <input
-              type="number"
-              min="10"
-              value={secs}
-              onChange={(e) => setSecs(+e.target.value || 120)}
-              style={{ width: 90 }}
-            />
-          </label>
-          <button className="btn" onClick={() => act("rapid", { seconds: secs })}>
-            ⚡ Launch Rapid Fire
-          </button>
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <span className="mut">
-            {byRnd(3).filter((x) => !used(x.id)).length} unasked rapid fire questions remaining
-          </span>
-        </div>
-      </>
+      <RapidFireSetupPanel
+        seconds={secs}
+        onSecondsChange={setSecs}
+        remainingQuestions={byRnd(3).filter((question) => !used(question.id)).length}
+        onLaunch={() => act("rapid", { seconds: secs })}
+      />
     ),
-
-    // QUESTION BANK & SUBJECTS
     manage: (
-      <>
-        <div className="ad-form">
-          <select value={f.rnd} onChange={(e) => setF({ ...f, rnd: +e.target.value })}>
-            <option value={1}>Round 1: General Knowledge</option>
-            <option value={2}>Round 2: Subject Challenge</option>
-            <option value={3}>Round 3: Rapid Fire</option>
-          </select>
-
-          {f.rnd === 2 ? (
-            <select
-              value={f.subject_id}
-              onChange={(e) => setF({ ...f, subject_id: e.target.value })}
-            >
-              <option value="">Select Subject</option>
-              {qs.subjects.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div />
-          )}
-
-          <input
-            className="full"
-            placeholder="Question Text (Supports Sinhala, English, Unicode)"
-            value={f.text}
-            onChange={(e) => setF({ ...f, text: e.target.value })}
-          />
-
-          {f.rnd === 3 ? (
-            <input
-              className="full"
-              placeholder="Correct Answer Text"
-              value={f.answer_text}
-              onChange={(e) => setF({ ...f, answer_text: e.target.value })}
-            />
-          ) : (
-            <>
-              {f.o.map((o, k) => (
-                <input
-                  key={k}
-                  placeholder={`Option ${"ABCD"[k]}`}
-                  value={o}
-                  onChange={(e) =>
-                    setF({ ...f, o: f.o.map((y, j) => (j === k ? e.target.value : y)) })
-                  }
-                />
-              ))}
-              <select
-                className="full"
-                value={f.correct}
-                onChange={(e) => setF({ ...f, correct: +e.target.value })}
-              >
-                {"ABCD".split("").map((c, k) => (
-                  <option key={c} value={k}>
-                    Correct Option: {c}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
-
-        <div className="ad-row" style={{ marginTop: 14 }}>
-          <button className="btn" onClick={addQuestion}>
-            + Add Question to Bank
-          </button>
-          {msg && <span style={{ color: "var(--pop)", fontWeight: 700 }}>{msg}</span>}
-        </div>
-
-        <div className="ad-row" style={{ marginTop: 20 }}>
-          <input
-            placeholder="New Subject Name (e.g. History)"
-            value={sn}
-            onChange={(e) => setSn(e.target.value)}
-          />
-          <button
-            className="btn ghost"
-            onClick={async () => {
-              if (sn.trim()) {
-                await post("/api/questions", { kind: "subject", name: sn.trim() });
-                setSn("");
-                loadQ();
-              }
-            }}
-          >
-            + Add Subject
-          </button>
-        </div>
-
-        <div className="ad-cols">
-          <div>
-            <h3>Active Subjects ({qs.subjects.length})</h3>
-            <div className="ad-list">
-              {qs.subjects.map((x) => (
-                <div className="ad-item" key={x.id}>
-                  <span>{x.name}</span>
-                  <button className="btn ghost danger" onClick={() => del(x.id, "subject")}>
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3>All Questions ({qs.questions.length})</h3>
-            <div className="ad-list">
-              {qs.questions.map((x) => (
-                <div className="ad-item" key={x.id}>
-                  <span>
-                    <b>R{x.rnd}</b> {x.subject ? `[${x.subject}] ` : ""}
-                    {x.text}
-                  </span>
-                  <button className="btn ghost danger" onClick={() => del(x.id)}>
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </>
+      <QuestionBankPanel
+        form={f}
+        setForm={setF}
+        questions={qs.questions}
+        subjects={qs.subjects}
+        message={msg}
+        subjectName={sn}
+        setSubjectName={setSn}
+        onAddQuestion={addQuestion}
+        onAddSubject={async () => {
+          if (sn.trim()) {
+            await post("/api/questions", { kind: "subject", name: sn.trim() });
+            setSn("");
+            loadQ();
+          }
+        }}
+        onDelete={del}
+      />
     ),
   };
 

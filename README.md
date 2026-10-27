@@ -2,8 +2,9 @@
 
 ## 🚀 Quick Start
 1. `mysql -u root -p < schema.sql`
-2. `cp .env.example .env.local` *(set DB_* and ADMIN_PASSWORD)*
-3. `npm install && npm run dev`
+2. `mysql -u root -p < collection1.sql`
+3. `cp .env.example .env.local` *(set DB_* and ADMIN_PASSWORD)*
+4. `npm install && npm run dev`
 
 * **Display (Projector):** `/display`
 * **Admin (Teacher):** `/admin`

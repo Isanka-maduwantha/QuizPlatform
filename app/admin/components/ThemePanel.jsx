@@ -1,12 +1,24 @@
-import { COLOR_FIELDS, PRESETS } from "@/lib/theme";
+import { COLOR_FIELDS, DEFAULT_THEME, isColorLight, PRESETS } from "@/lib/theme";
+
+function getColorValue(theme, key) {
+  if (theme[key]) return theme[key];
+  const light = isColorLight(theme.bg);
+  const fallback = {
+    inkMuted: light ? "#64748B" : "#A7A5B4",
+    border: light ? "#0F172A" : "#FFFFFF",
+    action: theme.pop || DEFAULT_THEME.pop,
+    highlight: theme.danger || "#EF4444",
+  };
+  return fallback[key] || "#FFFFFF";
+}
 
 export default function ThemePanel({ theme, draft, setDraft, teams, music, onAction, onVolumeChange }) {
   const currentTheme = draft || theme;
 
   return (
     <>
-      <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 8 }}>
-        Choose A Theme Preset
+      <p className="theme-section-title">
+        Pick a look
       </p>
       <div className="theme-presets">
         {PRESETS.map((preset) => {
@@ -18,55 +30,58 @@ export default function ThemePanel({ theme, draft, setDraft, teams, music, onAct
               key={preset.name}
               className={`preset-chip ${isActive ? "active" : ""}`}
               onClick={() => setDraft(preset.theme)}
+              aria-pressed={isActive}
             >
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  backgroundColor: preset.theme.pop,
-                }}
-              />
-              {preset.name}
+              <span className="preset-chip-swatches" aria-hidden="true">
+                {[preset.theme.pop, preset.theme.a, preset.theme.b].map((color) => (
+                  <i key={color} style={{ backgroundColor: color }} />
+                ))}
+              </span>
+              <span className="preset-chip-copy">
+                <b>{preset.name}</b>
+                <small>{preset.tag}</small>
+              </span>
             </button>
           );
         })}
       </div>
 
-      <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", margin: "16px 0 8px" }}>
-        Customize Brand Colors
+      <p className="theme-section-title theme-colors-title">
+        Fine-tune colors
       </p>
       <div className="theme-swatches">
-        {COLOR_FIELDS.map(({ key, label }) => (
-          <div key={key} className="theme-swatch-box">
-            <span className="theme-swatch-label">{label}</span>
-            <div className="theme-input-group">
-              <input
-                type="color"
-                value={currentTheme[key] || "#FFFFFF"}
-                onChange={(event) =>
-                  setDraft({ ...currentTheme, [key]: event.target.value })
-                }
-              />
-              <input
-                type="text"
-                value={currentTheme[key] || ""}
-                onChange={(event) =>
-                  setDraft({ ...currentTheme, [key]: event.target.value })
-                }
-              />
+        {COLOR_FIELDS.map(({ key, label }) => {
+          const value = getColorValue(currentTheme, key);
+          return (
+            <div key={key} className="theme-swatch-box">
+              <span className="theme-swatch-label">{label}</span>
+              <div className="theme-input-group">
+                <input
+                  type="color"
+                  value={value}
+                  onChange={(event) =>
+                    setDraft({ ...currentTheme, [key]: event.target.value })
+                  }
+                />
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(event) =>
+                    setDraft({ ...currentTheme, [key]: event.target.value })
+                  }
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div
         className="theme-preview-card"
         style={{
-          backgroundColor: currentTheme.bg || "#0D0A1A",
+          backgroundColor: currentTheme.bg || "#0C0B14",
           color: currentTheme.ink || "#F5F3FF",
-          borderColor: currentTheme.card || "#181230",
+          borderColor: currentTheme.border || currentTheme.pop || currentTheme.card || "#181230",
         }}
       >
         <div className="theme-preview-header">Live Theme Preview</div>
@@ -78,11 +93,16 @@ export default function ThemePanel({ theme, draft, setDraft, teams, music, onAct
             {teams[1].name} (20 pts)
           </span>
         </div>
+        <div className="theme-preview-actions">
+          <span style={{ background: currentTheme.action || currentTheme.pop || "var(--action)", color: "var(--action-ink)" }}>Primary action</span>
+          <span style={{ background: currentTheme.highlight || currentTheme.b, color: "#FFFFFF" }}>Highlight</span>
+          <span style={{ color: currentTheme.inkMuted || "var(--ink-muted)" }}>Muted text</span>
+        </div>
         <div
           style={{
             padding: 12,
             borderRadius: 12,
-            backgroundColor: currentTheme.card || "#181230",
+            backgroundColor: currentTheme.card || "#13121E",
             border: `1px solid ${currentTheme.pop}44`,
           }}
         >
@@ -100,7 +120,7 @@ export default function ThemePanel({ theme, draft, setDraft, teams, music, onAct
         </div>
       </div>
 
-      <div className="ad-row">
+      <div className="ad-row theme-actions">
         <button
           className="btn ok"
           onClick={async () => {
@@ -118,8 +138,8 @@ export default function ThemePanel({ theme, draft, setDraft, teams, music, onAct
       </div>
 
       <div className="audio-deck">
-        <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 10 }}>
-          Audio &amp; Sound FX Deck
+        <p className="theme-section-title">
+          Audio &amp; sound
         </p>
         <div className="ad-row">
           <button

@@ -1,30 +1,42 @@
 import { NextResponse } from 'next/server';
 import { pool, getState, setState } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
+import { DEFAULT_THEME } from '@/lib/theme';
 export const dynamic = 'force-dynamic';
 
 const DEF = {
-  theme: { a: '#0284C7', b: '#EC4899', pop: '#FACC15', bg: '#0D0A1A', ink: '#F5F3FF', card: '#181230' },
+  theme: DEFAULT_THEME,
   music: { on: false, volume: 0.4, sfx: true },
 };
 
-const withDefaults = (s) => ({
-  activeTeam: 0,
-  directTeam: 0,
-  turnPhase: 'member1',
-  eliminatedOptions: [],
-  round: 1,
-  wrongRule: 'opponent_5',
-  autoAdvance: true,
-  autoAdvanceSecs: 3,
-  lastAnswer: null,
-  ...s,
-  eliminatedOptions: Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [],
-  turnPhase: s?.turnPhase || 'member1',
-  directTeam: s?.directTeam !== undefined ? s.directTeam : (s?.activeTeam ?? 0),
-  theme: { ...DEF.theme, ...(s?.theme || {}) },
-  music: { ...DEF.music, ...(s?.music || {}) },
-});
+const withDefaults = (s) => {
+  const savedTheme = s?.theme || {};
+  const hasLegacyDefault =
+    savedTheme.bg === '#0D0A1A' &&
+    savedTheme.card === '#181230' &&
+    savedTheme.ink === '#F5F3FF' &&
+    savedTheme.a === '#0284C7' &&
+    savedTheme.b === '#EC4899' &&
+    savedTheme.pop === '#FACC15';
+
+  return {
+    activeTeam: 0,
+    directTeam: 0,
+    turnPhase: 'member1',
+    eliminatedOptions: [],
+    round: 1,
+    wrongRule: 'opponent_5',
+    autoAdvance: true,
+    autoAdvanceSecs: 3,
+    lastAnswer: null,
+    ...s,
+    eliminatedOptions: Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [],
+    turnPhase: s?.turnPhase || 'member1',
+    directTeam: s?.directTeam !== undefined ? s.directTeam : (s?.activeTeam ?? 0),
+    theme: { ...DEF.theme, ...(hasLegacyDefault ? {} : savedTheme) },
+    music: { ...DEF.music, ...(s?.music || {}) },
+  };
+};
 
 async function findNextQuestion(rnd, subject, used) {
   const usedList = [0, ...(used || [])];

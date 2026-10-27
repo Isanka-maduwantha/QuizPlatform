@@ -26,7 +26,7 @@ const TITLES = {
   manage: "📝 Question Bank & Subjects",
 };
 
-const WIDE = { live: true, manage: true };
+const WIDE = { manage: true };
 const VIEWS = {
   idle: "Lobby Screen (Scores)",
   subject: "Subject Title Announcement",
@@ -1036,7 +1036,7 @@ export default function Admin() {
     ),
   };
 
-  const renderPanel = (id) => {
+  const renderPanel = (id, panelClass = "", fixed = false) => {
     const i = order.indexOf(id);
     const closed = shut[id];
     const title = TITLES[id];
@@ -1057,6 +1057,8 @@ export default function Admin() {
         onDragEnd={() => setDrag(null)}
         onMove={(direction) => move(id, direction)}
         onToggle={() => toggle(id)}
+        panelClass={panelClass}
+        fixed={fixed}
       >
         {BODIES[id]}
       </AdminPanel>
@@ -1113,7 +1115,13 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="ad-grid">{order.map(renderPanel)}</div>
+      <div className="ad-primary-grid">
+        {renderPanel("look", "ad-theme-panel", true)}
+        {renderPanel("live", "ad-live-panel", true)}
+      </div>
+      <div className="ad-grid">
+        {order.filter((id) => id !== "look" && id !== "live").map(renderPanel)}
+      </div>
     </main>
   );
 }

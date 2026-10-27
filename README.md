@@ -43,23 +43,19 @@
 
 Located directly in the **"Theme Studio & Sound"** panel in the Admin Console:
 
-### 1. 7 One-Click Professional Presets:
-* 🟣 **MindSpark Violet:** Deep violet background with electric cyan, pink, and yellow.
-* 🎮 **Kahoot Classic:** High-energy purple arena with iconic Kahoot hues.
-* 🌌 **Midnight Cyber:** Sleek OLED dark mode with neon cyan and magenta.
-* 🏛️ **Royal Navy & Gold:** Academic collegiate blue with metallic gold accents.
-* 🌿 **Emerald Academy:** Botanical campus forest green with amber highlights.
-* 🔥 **Crimson Energy:** Velvet ruby and sunrise coral.
-* ☀️ **Studio Clean Light:** Modern executive minimalist light theme.
+### 1. 21 One-Click Professional Presets:
+* **MindSpark Studio**, **Kahoot Classic**, **Midnight Cyberpunk**, **Sunset Horizon**, **Tokyo Sakura**, **Matrix Terminal**, **Royal Navy & Gold**
+* **Crimson Inferno**, **Arctic Glacier**, **Obsidian Onyx**, **Clean Studio Light**, **Nordic Aurora**, **Lavender Haze**, **Electric Blue**
+* **Rose Quartz**, **Citrus Pop**, **Ocean Depth**, **Ember Glow**, **Mint Condition**, **Monochrome**
+* **Navy, Crimson & Gold:** Premium light palette with navy actions, crimson highlights, metallic amber, warm cream, and soft slate borders.
 
 ### 2. Custom Brand Color Picker:
 Visual color pickers + direct hex code inputs for:
-* Team A Color
-* Team B Color
-* Accent / Glow Color
-* Background Color
-* Text (Ink) Color
-* Card Surface Color
+* Team A and Team B colors
+* Accent, primary action, and alert colors
+* Background and card surface colors
+* Primary and muted text colors
+* Border color
 
 ### 3. Live Theme Preview:
 * View exactly how the display screen and team badges will look inside the Admin deck before or while applying.

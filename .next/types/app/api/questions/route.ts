@@ -1,4 +1,4 @@
-// File: /home/orian/Documents/Node/mindspark/app/api/questions/route.js
+// File: /home/orian/Documents/Node/mindsparkLatest/QuizPlatform/app/api/questions/route.js
 import * as entry from '../../../../../app/api/questions/route.js'
 import type { NextRequest } from 'next/server.js'
 

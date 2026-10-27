@@ -35,7 +35,7 @@
   align-items: center;
   gap: 20px;
   padding: 16px 32px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
   backdrop-filter: blur(12px);
   background: rgba(0, 0, 0, 0.2);
 }
@@ -50,10 +50,10 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--pop) 0%, #EA580C 100%);
+  background: linear-gradient(135deg, var(--pop) 0%, var(--action, #7861DF) 100%);
   display: grid;
   place-items: center;
-  color: #0D0A1A;
+  color: var(--action-ink, #0D0A1A);
   box-shadow: 0 4px 15px var(--pop-glow);
   font-size: 26px;
   font-weight: 900;
@@ -63,7 +63,7 @@
   font-size: clamp(20px, 2.4vw, 28px);
   font-weight: 900;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #FFFFFF 0%, var(--ink-muted) 100%);
+  background: linear-gradient(135deg, var(--heading, #FFFFFF) 0%, var(--ink-muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.1;
@@ -330,7 +330,7 @@
   height: 90px;
   margin: 0 auto 20px;
   border-radius: 28px;
-  background: linear-gradient(135deg, var(--pop) 0%, #F97316 100%);
+  background: linear-gradient(135deg, var(--pop) 0%, var(--action, #7861DF) 100%);
   display: grid;
   place-items: center;
   font-size: 46px;
@@ -343,7 +343,7 @@
   font-weight: 900;
   letter-spacing: -1px;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #FFFFFF 0%, #D4D4D8 100%);
+  background: linear-gradient(135deg, var(--heading, #FFFFFF) 0%, var(--ink) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -400,9 +400,9 @@
   gap: 8px;
   padding: 8px 24px;
   border-radius: 9999px;
-  background: rgba(250, 204, 21, 0.15);
+  background: var(--pop-glow, rgba(250, 204, 21, 0.15));
   border: 1px solid var(--pop);
-  color: var(--pop);
+  color: var(--heading, var(--pop));
   font-size: clamp(16px, 1.8vw, 22px);
   font-weight: 800;
   text-transform: uppercase;
@@ -415,7 +415,7 @@
   font-weight: 900;
   letter-spacing: -1.5px;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%);
+  background: linear-gradient(135deg, var(--heading, #FFFFFF) 0%, var(--ink) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -742,7 +742,7 @@
   font-weight: 900;
   letter-spacing: -1.5px;
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+  background: linear-gradient(135deg, var(--heading, #FFD700) 0%, var(--pop) 50%, #FF8C00 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 4px 15px rgba(255, 215, 0, 0.4));
@@ -861,5 +861,117 @@
   }
   .stage {
     padding: 10px 16px 24px;
+  }
+}
+
+/* Stage presentation refinements */
+.disp {
+  isolation: isolate;
+}
+
+.disp-header {
+  background: var(--header-bg, rgba(0, 0, 0, 0.2));
+  border-bottom-color: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.brand-icon {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.sb {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.tm {
+  min-height: 92px;
+  border-radius: 18px;
+}
+
+.stage {
+  min-height: 440px;
+  max-width: 1500px;
+}
+
+.lobby-card,
+.rapid-box {
+  border-radius: 26px;
+  backdrop-filter: blur(10px);
+}
+
+.q-box {
+  border-radius: 21px;
+  backdrop-filter: blur(10px);
+}
+
+.opt-card {
+  border-radius: 18px;
+}
+
+.icon-btn:focus-visible,
+.snd-float:focus-visible {
+  outline: 3px solid var(--pop);
+  outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .disp-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .brand-section {
+    gap: 10px;
+  }
+
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .brand-sub {
+    font-size: 10px;
+  }
+
+  .logos {
+    display: none;
+  }
+
+  .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tm {
+    min-height: 76px;
+    padding: 11px 14px;
+  }
+
+  .tm-info {
+    gap: 9px;
+  }
+
+  .tm-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stage {
+    min-height: 0;
+  }
+
+  .lobby-card,
+  .rapid-box {
+    padding: 30px 19px;
+    border-radius: 22px;
+  }
+
+  .vs-banner {
+    gap: 10px;
+  }
+
+  .vs-team {
+    padding: 12px 15px;
   }
 }

@@ -13,6 +13,7 @@
   font-family: inherit;
 }
 
+.ad-primary-grid,
 .ad > .kb-cheatsheet,
 .ad > .ad-top,
 .ad > .ad-grid {
@@ -46,12 +47,24 @@
   font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.5px;
+  color: var(--heading, var(--ink));
+}
+
+.ad-top .brand-icon {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 12px;
+  background: linear-gradient(145deg, var(--pop), var(--action));
+  color: var(--action-ink, #14111f);
+  box-shadow: 0 5px 20px var(--pop-glow);
 }
 
 .ad-status-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: var(--heading, var(--ink));
   padding: 6px 14px;
   border-radius: 9999px;
   font-size: 13px;
@@ -63,9 +76,9 @@
 }
 
 .ad-status-pill.on-air {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #F87171;
+  background: var(--danger-glow);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .ad-status-pill.on-air::before {
@@ -73,8 +86,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #EF4444;
-  box-shadow: 0 0 8px #EF4444;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
   animation: pulseGlow 1.5s infinite;
 }
 
@@ -122,6 +135,19 @@
   align-items: start;
 }
 
+.ad-primary-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.65fr);
+  align-items: start;
+  grid-gap: 16px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ad-primary-grid > .ad-panel {
+  min-width: 0;
+}
+
 .ad-panel {
   background: var(--card);
   border: 1px solid var(--card-border);
@@ -165,7 +191,7 @@
 }
 
 .ad-grip {
-  color: var(--ink-muted);
+  color: var(--heading, var(--ink-muted));
   font-size: 18px;
   cursor: -webkit-grab;
   cursor: grab;
@@ -263,7 +289,7 @@
   height: 28px;
   border-radius: 8px;
   background: var(--pop);
-  color: #0D0A1A;
+  color: var(--pop-ink, #0D0A1A);
   display: grid;
   place-items: center;
   font-weight: 900;
@@ -278,7 +304,7 @@
 .ad-time {
   font-size: 28px;
   font-weight: 900;
-  color: var(--pop);
+  color: var(--heading, var(--pop));
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
   margin: 0 8px;
@@ -305,7 +331,7 @@
   text-align: right;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
-  color: var(--pop);
+  color: var(--heading, var(--pop));
 }
 
 /* Question List Items */
@@ -372,6 +398,155 @@
   transition: all 0.2s;
 }
 
+.theme-section-title {
+  margin: 0 0 9px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
+
+.theme-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-gap: 7px;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.ad-theme-panel .preset-chip {
+  min-width: 0;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  grid-gap: 7px;
+  gap: 7px;
+  padding: 7px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.preset-chip-swatches {
+  display: flex;
+  width: 23px;
+  height: 23px;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.preset-chip-swatches i {
+  width: 11px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 5px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22);
+}
+
+.preset-chip-swatches i + i {
+  margin-left: -5px;
+}
+
+.preset-chip-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preset-chip-copy b {
+  width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-chip-copy small {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 8px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-chip.active .preset-chip-copy small {
+  color: color-mix(in srgb, var(--action-ink, #0D0A1A) 72%, transparent);
+}
+
+.theme-colors-title {
+  margin-top: 16px;
+}
+
+.ad-theme-panel .theme-swatches {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ad-theme-panel .theme-swatch-box {
+  min-width: 0;
+  padding: 8px;
+}
+
+.ad-theme-panel .theme-input-group {
+  min-width: 0;
+  gap: 5px;
+}
+
+.ad-theme-panel .theme-input-group input[type="color"] {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.ad-theme-panel .theme-input-group input[type="text"] {
+  min-width: 0;
+  padding: 6px;
+  font-size: 11px;
+}
+
+.ad-theme-panel .theme-actions > .btn {
+  flex: 1 1;
+  padding: 10px;
+  font-size: 11px;
+}
+
+.ad-theme-panel .theme-preview-card {
+  padding: 12px;
+}
+
+.theme-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.theme-preview-actions span {
+  padding: 5px 7px;
+  border-radius: 6px;
+}
+
+.ad-theme-panel .theme-preview-card > div:nth-child(2) {
+  flex-wrap: wrap;
+}
+
+.ad-theme-panel .theme-preview-card > div:nth-child(2) > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .preset-chip:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: var(--pop);
@@ -379,9 +554,9 @@
 }
 
 .preset-chip.active {
-  background: var(--pop);
-  color: #0D0A1A;
-  border-color: var(--pop);
+  background: var(--action, var(--pop));
+  color: var(--action-ink, #0D0A1A);
+  border-color: var(--action, var(--pop));
 }
 
 .theme-swatches {
@@ -585,10 +760,10 @@
 }
 
 .round-pill-btn.active {
-  background: var(--pop);
-  color: #0D0A1A;
-  border-color: var(--pop);
-  box-shadow: 0 2px 10px var(--pop-glow);
+  background: var(--action, var(--pop));
+  color: var(--action-ink, #0D0A1A);
+  border-color: var(--action, var(--pop));
+  box-shadow: 0 2px 10px var(--a-glow);
 }
 
 /* School Turn Selector Cards */
@@ -622,9 +797,9 @@
 }
 
 .school-card.active {
-  border-color: var(--pop);
-  background: rgba(250, 204, 21, 0.08);
-  box-shadow: 0 0 20px var(--pop-glow);
+  border-color: var(--action, var(--pop));
+  background: var(--action-glow, var(--pop-glow));
+  box-shadow: 0 0 20px var(--action-glow, var(--pop-glow));
 }
 
 .school-card-info {
@@ -658,7 +833,7 @@
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  color: var(--pop);
+  color: var(--heading, var(--pop));
   letter-spacing: 0.5px;
 }
 
@@ -837,5 +1012,96 @@
   }
   .answer-touch-pad {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Broadcast studio visual refinements */
+.ad {
+  padding: clamp(12px, 2vw, 26px);
+}
+
+.ad-top {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 10px;
+  z-index: 20;
+  padding: 15px 20px;
+  -webkit-backdrop-filter: blur(18px);
+          backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  border-color: color-mix(in srgb, var(--card-border) 85%, transparent);
+}
+
+.ad-top-brand h1 {
+  letter-spacing: -0.7px;
+}
+
+.ad-grid {
+  gap: 16px;
+}
+
+.ad-panel {
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.16);
+}
+
+.ad-head {
+  padding: 14px 18px;
+  background: color-mix(in srgb, var(--card) 82%, var(--pop) 6%);
+}
+
+.ad-body {
+  padding: clamp(14px, 2vw, 22px);
+}
+
+.ad-q-preview,
+.round-selector-bar,
+.audio-deck,
+.theme-preview-card {
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.ad-ic,
+.btn,
+.round-pill-btn,
+.preset-chip,
+.school-card {
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ad :is(button, input, select, textarea, a):focus-visible {
+  outline: 2px solid var(--pop);
+  outline-offset: 3px;
+}
+
+.kb-cheatsheet {
+  border: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+}
+
+.ad-status-pill {
+  border-radius: 999px;
+}
+
+@media (max-width: 768px) {
+  .ad-primary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ad-top {
+    position: static;
+    padding: 15px;
+  }
+
+  .ad-top .ad-row {
+    width: 100%;
+  }
+
+  .ad-top .ad-row > * {
+    flex: 1 1;
   }
 }

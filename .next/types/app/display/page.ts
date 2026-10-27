@@ -1,4 +1,4 @@
-// File: /home/orian/Documents/Node/mindspark/app/display/page.jsx
+// File: /home/orian/Documents/Node/mindsparkLatest/QuizPlatform/app/display/page.jsx
 import * as entry from '../../../../app/display/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

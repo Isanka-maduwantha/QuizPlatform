@@ -38,6 +38,7 @@
   border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
   backdrop-filter: blur(12px);
   background: rgba(0, 0, 0, 0.2);
+
 }
 
 .brand-section {
@@ -304,7 +305,7 @@
 }
 
 .result-banner.wrong {
-  background: linear-gradient(135deg, #B91C1C 0%, #EF4444 100%);
+  background: linear-gradient(135deg, #D32F2F 0%, #E53935 100%);
   color: #FFFFFF;
   border: 2px solid #F87171;
 }
@@ -973,5 +974,118 @@
 
   .vs-team {
     padding: 12px 15px;
+  }
+}
+
+/* Responsive screen fitting */
+
+.disp {
+  height: 100dvh;
+  min-height: 0;
+  overflow-x: hidden;
+}
+
+.disp-header {
+  padding: clamp(5px, 1vh, 12px)
+           clamp(10px, 2vw, 28px);
+  gap: clamp(6px, 1vw, 16px);
+}
+
+.brand-title {
+  font-size: clamp(14px, 2.5vh, 26px);
+}
+
+.brand-sub {
+  font-size: clamp(9px, 1.4vh, 13px);
+}
+
+.logos img {
+  height: clamp(24px, 5vh, 55px);
+}
+
+/* Smaller scoreboard */
+.sb {
+  padding: clamp(4px, 1vh, 12px)
+           clamp(10px, 2vw, 28px);
+  gap: clamp(6px, 1vw, 16px);
+}
+
+.tm {
+  min-height: 0;
+  padding: clamp(7px, 1.4vh, 16px);
+}
+
+.tm-name {
+  font-size: clamp(13px, 2.4vh, 24px);
+}
+
+.tm b {
+  font-size: clamp(24px, 5vh, 58px);
+}
+
+/* Main stage */
+.stage {
+  flex: 1;
+  min-height: 0;
+  padding: clamp(5px, 1vh, 12px)
+           clamp(10px, 2vw, 28px);
+}
+
+/* Smaller question area */
+.q-box {
+  padding: clamp(10px, 2vh, 28px);
+  margin-bottom: clamp(6px, 1.2vh, 18px);
+}
+
+.q-text {
+  font-size: clamp(16px, 3.4vh, 38px);
+  line-height: 1.2;
+}
+
+/* Timer */
+.timer-circle {
+  width: clamp(40px, 7vh, 76px);
+  height: clamp(40px, 7vh, 76px);
+}
+
+.timer-num {
+  font-size: clamp(17px, 3vh, 32px);
+}
+
+/* Round labels */
+.q-header {
+  margin-bottom: clamp(4px, 1vh, 12px);
+}
+
+.round-pill {
+  font-size: clamp(9px, 1.5vh, 14px);
+  padding: 4px 9px;
+}
+
+/* Smaller control buttons */
+.icon-btn {
+  width: clamp(28px, 4.5vh, 44px);
+  height: clamp(28px, 4.5vh, 44px);
+}
+
+/* Short laptop/projector screens */
+@media (max-height: 650px) {
+  .disp-header {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .sb {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .q-box {
+    padding: 8px 14px;
+  }
+
+  .brand-sub,
+  .tm-status {
+    display: none;
   }
 }

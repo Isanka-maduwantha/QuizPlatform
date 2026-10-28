@@ -11,11 +11,13 @@ const DEF = {
 
 const DEFAULT_SCORING_RULES = {
   correctPoints: 10,
+  secondChancePoints: 5,
   wrongAction: 'standard',
   wrongPenalty: 0,
   passBonus: 5,
   rapidFirePoints: 5,
 };
+
 
 const WRONG_ACTIONS = new Set(['standard', 'opponent', 'reveal']);
 const POINT_LIMIT = 10000;
@@ -35,18 +37,41 @@ function legacyScoringRules(wrongRule) {
   }
   return DEFAULT_SCORING_RULES;
 }
-
 function normalizeScoringRules(candidate, fallback = DEFAULT_SCORING_RULES) {
-  const rules = candidate && typeof candidate === 'object' && !Array.isArray(candidate)
-    ? candidate
-    : {};
+  const rules =
+    candidate && typeof candidate === 'object' && !Array.isArray(candidate)
+      ? candidate
+      : {};
 
   return {
-    correctPoints: pointsOrDefault(rules.correctPoints, fallback.correctPoints),
-    wrongAction: WRONG_ACTIONS.has(rules.wrongAction) ? rules.wrongAction : fallback.wrongAction,
-    wrongPenalty: pointsOrDefault(rules.wrongPenalty, fallback.wrongPenalty),
-    passBonus: pointsOrDefault(rules.passBonus, fallback.passBonus),
-    rapidFirePoints: pointsOrDefault(rules.rapidFirePoints, fallback.rapidFirePoints),
+    correctPoints: pointsOrDefault(
+      rules.correctPoints,
+      fallback.correctPoints
+    ),
+
+    secondChancePoints: pointsOrDefault(
+      rules.secondChancePoints,
+      fallback.secondChancePoints ?? DEFAULT_SCORING_RULES.secondChancePoints
+    ),
+
+    wrongAction: WRONG_ACTIONS.has(rules.wrongAction)
+      ? rules.wrongAction
+      : fallback.wrongAction,
+
+    wrongPenalty: pointsOrDefault(
+      rules.wrongPenalty,
+      fallback.wrongPenalty
+    ),
+
+    passBonus: pointsOrDefault(
+      rules.passBonus,
+      fallback.passBonus
+    ),
+
+    rapidFirePoints: pointsOrDefault(
+      rules.rapidFirePoints,
+      fallback.rapidFirePoints
+    ),
   };
 }
 
@@ -284,7 +309,12 @@ export async function POST(req) {
         s.timerEnd = null;
         s.turnPhase = 'completed';
 
-        const pts = currentPhase === 'passed' ? rules.passBonus : rules.correctPoints;
+        const pts =
+          currentPhase === 'passed'
+            ? rules.passBonus
+            : currentPhase === 'member2'
+              ? rules.secondChancePoints
+              : rules.correctPoints;
 
         s.teams[team].score += pts;
         s.lastAnswer = {

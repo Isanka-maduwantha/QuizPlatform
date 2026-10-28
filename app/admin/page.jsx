@@ -169,13 +169,15 @@ export default function Admin() {
   const eliminated = Array.isArray(s?.eliminatedOptions) ? s.eliminatedOptions : [];
   const activeRound = s?.round ?? 1;
   const activeSubject = s?.subject;
-  const scoringRules = s?.scoringRules || {
-    correctPoints: 10,
-    wrongAction: "standard",
-    wrongPenalty: 0,
-    passBonus: 5,
-    rapidFirePoints: 5,
-  };
+ const scoringRules = {
+  correctPoints: 10,
+  secondChancePoints: 5,
+  wrongAction: "standard",
+  wrongPenalty: 0,
+  passBonus: 5,
+  rapidFirePoints: 5,
+  ...(s?.scoringRules || {}),
+};
   const autoAdvance = s?.autoAdvance ?? true;
   const autoAdvanceSecs = s?.autoAdvanceSecs ?? 3;
 

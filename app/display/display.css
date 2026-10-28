@@ -594,6 +594,7 @@
 
 .opt-text {
   flex: 1;
+  font-size: 20px;
 }
 
 /* Authentic Kahoot Colors */
@@ -1012,6 +1013,7 @@
 
 .tm {
   min-height: 0;
+  
   padding: clamp(7px, 1.4vh, 16px);
 }
 

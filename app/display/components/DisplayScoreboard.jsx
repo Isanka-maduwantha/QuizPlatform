@@ -26,10 +26,10 @@ export default function DisplayScoreboard({ teams, isTie, view, activeTeamIdx, t
                 {isLeader && !isTurn && <span className="tm-status">👑 Leader</span>}
               </div>
             </div>
-            <div className="tm-score-wrap">
+            {/* <div className="tm-score-wrap">
               <b>{team.score}</b>
               <span className="tm-pts">pts</span>
-            </div>
+            </div> */}
           </div>
         );
       })}

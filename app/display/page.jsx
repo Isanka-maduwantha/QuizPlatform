@@ -236,16 +236,18 @@ export default function Display() {
       SFX.win();
       fireConfetti();
     }
-    // New Question appeared
-    else if (oldState.qid !== newState.qid && newState.qid) {
-      SFX.fanfare();
-    }
-    // Points awarded (manual adjustment)
+    // Points awarded (manual adjustment or rapid fire correct)
     else if (
       newState.teams[0].score + newState.teams[1].score >
       oldState.teams[0].score + oldState.teams[1].score
     ) {
       SFX.ding();
+    }
+    // New Question appeared (launch fanfare for main rounds or when entering rapid fire)
+    else if (oldState.qid !== newState.qid && newState.qid) {
+      if (oldState.view !== "rapid" || newState.view !== "rapid") {
+        SFX.fanfare();
+      }
     }
   }, [d, armed, fireConfetti]);
 
@@ -447,7 +449,7 @@ export default function Display() {
             )}
 
             <div className="q-box">
-              <h2 className="q-text">{q.text}</h2>
+              <h2 className="q-text" dangerouslySetInnerHTML={{__html: q.text}}/>
             </div>
 
             <div className="opts-grid">
@@ -466,7 +468,7 @@ export default function Display() {
                       <span>{shape.shape}</span>
                       <span className="opt-letter">{shape.letter}</span>
                     </div>
-                    <span className="opt-text">{opt}</span>
+                    <span className="opt-text" dangerouslySetInnerHTML={{ __html: opt }} />
                   </div>
                 );
               })}
@@ -478,15 +480,22 @@ export default function Display() {
         {s.view === "rapid" && (
           <div className="rapid-box">
             <div className="rapid-tag">
-              <span>⚡</span> Rapid Fire Blitz • First Buzzer Answers
+              <span>⚡</span> Rapid Fire Blitz • {left === null ? "Ready" : left === 0 ? "Time Expired" : "First Buzzer Answers"}
             </div>
-            <div className={`rapid-timer-big ${left !== null && left <= 10 ? "urgent" : ""}`}>
-              {fmt(left ?? 0)}
+            <div className={`rapid-timer-big ${left !== null && left <= 3 ? "urgent" : ""}`}>
+              {left !== null ? (left >= 60 ? fmt(left) : left) : (s.rapidSeconds || 10)}
             </div>
             {left === 0 ? (
-              <h2 className="rapid-q" style={{ color: "var(--danger)" }}>
-                ⏰ Time’s Up!
-              </h2>
+              <div>
+                <h2 className="rapid-q" style={{ color: "var(--danger)", marginBottom: 12 }}>
+                  ⏰ Time’s Up!
+                </h2>
+                {q?.text && (
+                  <p style={{ opacity: 0.65, fontSize: "clamp(18px, 2.2vw, 26px)", margin: 0 }}>
+                    {q.text}
+                  </p>
+                )}
+              </div>
             ) : (
               <h2 className="rapid-q">{q ? q.text : "No more questions in this round"}</h2>
             )}
@@ -503,10 +512,10 @@ export default function Display() {
             <p className="lobby-desc">Points scored during this rapid fire round:</p>
             <div className="vs-banner">
               <div className="vs-team t0">
-                {T[0].name}: +{got[0] * 5} pts ({got[0]} correct)
+                {T[0].name}: +{got[0] * (s.scoringRules?.rapidFirePoints ?? 5)} pts ({got[0]} correct)
               </div>
               <div className="vs-team t1">
-                {T[1].name}: +{got[1] * 5} pts ({got[1]} correct)
+                {T[1].name}: +{got[1] * (s.scoringRules?.rapidFirePoints ?? 5)} pts ({got[1]} correct)
               </div>
             </div>
           </div>

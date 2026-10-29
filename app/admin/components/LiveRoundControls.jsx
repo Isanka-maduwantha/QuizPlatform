@@ -58,12 +58,13 @@ export default function LiveRoundControls({
 
       {activeRound === 3 && (
         <label className="live-rapid-duration">
-          Rapid-fire duration
+          Question timer
           <input
             type="number"
-            min="10"
+            min="3"
+            max="60"
             value={seconds}
-            onChange={(event) => onSetSeconds(+event.target.value || 120)}
+            onChange={(event) => onSetSeconds(+event.target.value || 10)}
           />
           <span>seconds</span>
         </label>

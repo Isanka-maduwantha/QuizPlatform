@@ -1,3 +1,4 @@
+import logo from '../assets/logo.jpeg';
 export default function DisplayHeader({ isFullscreen, armed, onToggleFullscreen, onToggleAudio }) {
   const hideUnavailableLogo = (event) => {
     event.currentTarget.style.display = "none";
@@ -6,7 +7,7 @@ export default function DisplayHeader({ isFullscreen, armed, onToggleFullscreen,
   return (
     <header className="disp-header">
       <div className="brand-section">
-        <div className="brand-icon">⚡</div>
+        <div className=""><img src={logo} className="brand-icon" alt="" /></div>
         <div>
           <div className="brand-title">MindSpark</div>
           <div className="brand-sub">Live Quiz Arena</div>

@@ -105,6 +105,8 @@ const withDefaults = (s) => {
       s?.scoringRules || legacyScoringRules(s?.wrongRule),
       DEFAULT_SCORING_RULES
     ),
+    rapidSeconds: Number(s?.rapidSeconds) > 0 ? Number(s?.rapidSeconds) : 10,
+    rapidManualTimer: s?.rapidManualTimer !== undefined ? Boolean(s.rapidManualTimer) : true,
   };
 };
 
@@ -186,6 +188,8 @@ export async function POST(req) {
       }
       if (b.autoAdvance !== undefined) s.autoAdvance = b.autoAdvance;
       if (b.autoAdvanceSecs !== undefined) s.autoAdvanceSecs = b.autoAdvanceSecs;
+      if (b.rapidSeconds !== undefined) s.rapidSeconds = Number(b.rapidSeconds) > 0 ? Number(b.rapidSeconds) : 10;
+      if (b.rapidManualTimer !== undefined) s.rapidManualTimer = Boolean(b.rapidManualTimer);
       break;
     case 'idle':
       s.view = 'idle';
@@ -220,7 +224,7 @@ export async function POST(req) {
       }
       break;
     case 'timer':
-      s.timerEnd = Date.now() + b.seconds * 1000;
+      s.timerEnd = b.seconds > 0 ? Date.now() + b.seconds * 1000 : null;
       break;
     case 'reveal':
       s.revealed = true;
@@ -462,29 +466,49 @@ export async function POST(req) {
       s.eliminatedOptions = [];
       s.turnPhase = 'member1';
       break;
-    case 'rapid':
+    case 'rapid': {
       s.view = 'rapid';
       s.round = 3;
       s.got = [0, 0];
-      s.timerEnd = Date.now() + b.seconds * 1000;
+      const perQ = Number(b.seconds) > 0 ? Number(b.seconds) : (s.rapidSeconds || 10);
+      s.rapidSeconds = perQ;
+      if (b.rapidManualTimer !== undefined) s.rapidManualTimer = Boolean(b.rapidManualTimer);
       s.qid = await nextRapid(s);
+      s.timerEnd = s.qid && !s.rapidManualTimer ? Date.now() + perQ * 1000 : null;
       s.revealed = false;
       s.lastAnswer = null;
       break;
-    case 'rok':
-      if (live) {
+    }
+    case 'rok': {
+      if (s.view === 'rapid' && s.qid) {
         s.teams[b.team].score += s.scoringRules.rapidFirePoints;
         s.got[b.team]++;
         if (!s.used.includes(s.qid)) s.used.push(s.qid);
         s.qid = await nextRapid(s);
+        if (s.qid) {
+          const perQ = s.rapidSeconds || 10;
+          s.timerEnd = !s.rapidManualTimer ? Date.now() + perQ * 1000 : null;
+        } else {
+          s.timerEnd = null;
+          s.view = 'rapidEnd';
+        }
       }
       break;
-    case 'rpass':
-      if (live) {
+    }
+    case 'rpass': {
+      if (s.view === 'rapid' && s.qid) {
         if (!s.used.includes(s.qid)) s.used.push(s.qid);
         s.qid = await nextRapid(s);
+        if (s.qid) {
+          const perQ = s.rapidSeconds || 10;
+          s.timerEnd = !s.rapidManualTimer ? Date.now() + perQ * 1000 : null;
+        } else {
+          s.timerEnd = null;
+          s.view = 'rapidEnd';
+        }
       }
       break;
+    }
     case 'rend':
       s.view = 'rapidEnd';
       s.timerEnd = null;

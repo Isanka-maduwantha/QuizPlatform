@@ -62,13 +62,15 @@ export function RapidFireSetupPanel({ seconds, onSecondsChange, remainingQuestio
     <>
       <div className="ad-row">
         <label className="rapid-fire-duration">
-          Timer Seconds:
+          Timer per question:
           <input
             type="number"
-            min="10"
+            min="3"
+            max="60"
             value={seconds}
-            onChange={(event) => onSecondsChange(+event.target.value || 120)}
+            onChange={(event) => onSecondsChange(+event.target.value || 10)}
           />
+          <span>sec</span>
         </label>
         <button className="btn" onClick={onLaunch}>⚡ Launch Rapid Fire</button>
       </div>

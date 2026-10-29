@@ -101,6 +101,8 @@ export default function LiveHostDeck({
           correctCounts={correctCounts}
           points={scoringRules.rapidFirePoints}
           onAction={onAction}
+          remainingQuestions={remainingQuestions}
+          perQuestionSeconds={state.rapidSeconds || 10}
         />
       ) : (
         <HostStandby view={state.view} viewLabels={viewLabels} onLaunch={launch} />

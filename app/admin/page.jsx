@@ -48,7 +48,7 @@ export default function Admin() {
   const [d, setD] = useState(null);
   const [qs, setQs] = useState({ questions: [], subjects: [] });
   const [pw, setPw] = useState("");
-  const [secs, setSecs] = useState(120);
+  const [secs, setSecs] = useState(10);
   const [f, setF] = useState(blank);
   const [sn, setSn] = useState("");
   const [msg, setMsg] = useState("");
@@ -180,6 +180,44 @@ export default function Admin() {
 };
   const autoAdvance = s?.autoAdvance ?? true;
   const autoAdvanceSecs = s?.autoAdvanceSecs ?? 3;
+  const left = s?.timerEnd
+    ? Math.max(0, Math.ceil((s.timerEnd - (now + ((d?.now || Date.now()) - Date.now()))) / 1000))
+    : null;
+
+  const rapidAutoAdvanceRef = useRef(null);
+  const lastTimedOutQidRef = useRef(null);
+
+  // Sync secs with state rapidSeconds when available
+  useEffect(() => {
+    if (s?.rapidSeconds) {
+      setSecs(s.rapidSeconds);
+    }
+  }, [s?.rapidSeconds]);
+
+  // Auto-advance for rapid fire questions on 10s timeout
+  useEffect(() => {
+    if (s?.view === "rapid" && s?.qid && left === 0 && autoAdvance) {
+      if (lastTimedOutQidRef.current !== s.qid) {
+        lastTimedOutQidRef.current = s.qid;
+        rapidAutoAdvanceRef.current = setTimeout(() => {
+          act("rpass");
+        }, 1500);
+      }
+    } else {
+      if (rapidAutoAdvanceRef.current) {
+        clearTimeout(rapidAutoAdvanceRef.current);
+        rapidAutoAdvanceRef.current = null;
+      }
+      if (s?.view !== "rapid" || !s?.qid || (left !== null && left > 0)) {
+        lastTimedOutQidRef.current = null;
+      }
+    }
+    return () => {
+      if (rapidAutoAdvanceRef.current) {
+        clearTimeout(rapidAutoAdvanceRef.current);
+      }
+    };
+  }, [s?.view, s?.qid, left, autoAdvance, act]);
 
   // Clear countdown timer when question changes
   useEffect(() => {
@@ -296,6 +334,31 @@ export default function Admin() {
         }
       }
 
+      // Rapid Fire Keys: 1 (Team A), 2 (Team B), 0 / P / Space (Pass / Next), T (Reset timer)
+      if (state.view === "rapid" && state.qid) {
+        const key = e.key.toLowerCase();
+        if (key === "1") {
+          e.preventDefault();
+          act("rok", { team: 0 });
+          return;
+        }
+        if (key === "2") {
+          e.preventDefault();
+          act("rok", { team: 1 });
+          return;
+        }
+        if (key === "0" || key === "p" || e.code === "Space") {
+          e.preventDefault();
+          act("rpass");
+          return;
+        }
+        if (key === "t") {
+          e.preventDefault();
+          act("timer", { seconds: state.rapidSeconds || 10 });
+          return;
+        }
+      }
+
       // Space: Reveal or Skip Countdown
       if (e.code === "Space") {
         e.preventDefault();
@@ -369,9 +432,6 @@ export default function Admin() {
   }
 
   const got = Array.isArray(s.got) ? s.got : [0, 0];
-  const left = s.timerEnd
-    ? Math.max(0, Math.ceil((s.timerEnd - (now + (d.now - Date.now()))) / 1000))
-    : null;
   const byRnd = (r, sub) =>
     qs.questions
       .filter((x) => x.rnd === r && (!sub || x.subject === sub))
@@ -540,11 +600,23 @@ export default function Admin() {
       {/* Keyboard Shortcuts Helper Bar */}
       <div className="kb-cheatsheet">
         <span>⚡ Host Shortcuts:</span>
-        <span className="kb-badge"><span className="kb-key">A / B / C / D</span> Select Answer</span>
-        <span className="kb-badge"><span className="kb-key">Tab</span> Switch School</span>
-        <span className="kb-badge"><span className="kb-key">T</span> 30s Timer</span>
-        <span className="kb-badge"><span className="kb-key">Space</span> Reveal / Next</span>
-        <span className="kb-badge"><span className="kb-key">Esc</span> Lobby</span>
+        {s.view === "rapid" ? (
+          <>
+            <span className="kb-badge"><span className="kb-key">1</span> {T[0].name} +{scoringRules.rapidFirePoints}</span>
+            <span className="kb-badge"><span className="kb-key">2</span> {T[1].name} +{scoringRules.rapidFirePoints}</span>
+            <span className="kb-badge"><span className="kb-key">0 / Space</span> Pass / Next</span>
+            <span className="kb-badge"><span className="kb-key">T</span> Reset {secs}s</span>
+            <span className="kb-badge"><span className="kb-key">Esc</span> Lobby</span>
+          </>
+        ) : (
+          <>
+            <span className="kb-badge"><span className="kb-key">A / B / C / D</span> Select Answer</span>
+            <span className="kb-badge"><span className="kb-key">Tab</span> Switch School</span>
+            <span className="kb-badge"><span className="kb-key">T</span> 30s Timer</span>
+            <span className="kb-badge"><span className="kb-key">Space</span> Reveal / Next</span>
+            <span className="kb-badge"><span className="kb-key">Esc</span> Lobby</span>
+          </>
+        )}
       </div>
 
       <header className="ad-top">

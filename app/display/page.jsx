@@ -480,24 +480,36 @@ export default function Display() {
         {s.view === "rapid" && (
           <div className="rapid-box">
             <div className="rapid-tag">
-              <span>⚡</span> Rapid Fire Blitz • {left === null ? "Ready" : left === 0 ? "Time Expired" : "First Buzzer Answers"}
+              <span>⚡</span> Rapid Fire Blitz • {s.revealed ? "Answer Revealed" : left === null ? "Ready" : left === 0 ? "Time Expired" : "First Buzzer Answers"}
             </div>
-            <div className={`rapid-timer-big ${left !== null && left <= 3 ? "urgent" : ""}`}>
-              {left !== null ? (left >= 60 ? fmt(left) : left) : (s.rapidSeconds || 10)}
+            <div className={`rapid-timer-big ${s.revealed ? "revealed" : left !== null && left <= 3 ? "urgent" : ""}`}>
+              {s.revealed ? "💡" : left !== null ? (left >= 60 ? fmt(left) : left) : (s.rapidSeconds || 10)}
             </div>
-            {left === 0 ? (
+            {left === 0 && !s.revealed ? (
               <div>
                 <h2 className="rapid-q" style={{ color: "var(--danger)", marginBottom: 12 }}>
                   ⏰ Time’s Up!
                 </h2>
                 {q?.text && (
                   <p style={{ opacity: 0.65, fontSize: "clamp(18px, 2.2vw, 26px)", margin: 0 }}>
-                    {q.text}
+                    {/* {q.text} */}
+                    <span dangerouslySetInnerHTML={{__html: q.text}}/>
                   </p>
                 )}
               </div>
             ) : (
-              <h2 className="rapid-q">{q ? q.text : "No more questions in this round"}</h2>
+              <h2 className="rapid-q">{q ?  <span dangerouslySetInnerHTML={{__html: q.text}}/> : "No more questions in this round"}</h2>
+            )}
+
+            {s.revealed && (q?.answer_text || (q?.options && q.correct !== undefined)) && (
+              <div className="rapid-answer-card">
+                <div className="rapid-answer-badge">
+                  <span>✓</span> Correct Answer
+                </div>
+                <div className="rapid-answer-val">
+                  <span dangerouslySetInnerHTML={{ __html: q.answer_text || q.options[q.correct] }} />
+                </div>
+              </div>
             )}
           </div>
         )}

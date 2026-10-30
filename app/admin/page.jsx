@@ -196,7 +196,7 @@ export default function Admin() {
 
   // Auto-advance for rapid fire questions on 10s timeout
   useEffect(() => {
-    if (s?.view === "rapid" && s?.qid && left === 0 && autoAdvance) {
+    if (s?.view === "rapid" && s?.qid && left === 0 && autoAdvance && !s?.revealed) {
       if (lastTimedOutQidRef.current !== s.qid) {
         lastTimedOutQidRef.current = s.qid;
         rapidAutoAdvanceRef.current = setTimeout(() => {
@@ -208,7 +208,7 @@ export default function Admin() {
         clearTimeout(rapidAutoAdvanceRef.current);
         rapidAutoAdvanceRef.current = null;
       }
-      if (s?.view !== "rapid" || !s?.qid || (left !== null && left > 0)) {
+      if (s?.view !== "rapid" || !s?.qid || (left !== null && left > 0) || s?.revealed) {
         lastTimedOutQidRef.current = null;
       }
     }
@@ -217,7 +217,7 @@ export default function Admin() {
         clearTimeout(rapidAutoAdvanceRef.current);
       }
     };
-  }, [s?.view, s?.qid, left, autoAdvance, act]);
+  }, [s?.view, s?.qid, s?.revealed, left, autoAdvance, act]);
 
   // Clear countdown timer when question changes
   useEffect(() => {
@@ -334,7 +334,7 @@ export default function Admin() {
         }
       }
 
-      // Rapid Fire Keys: 1 (Team A), 2 (Team B), 0 / P / Space (Pass / Next), T (Reset timer)
+      // Rapid Fire Keys: 1 (Team A), 2 (Team B), R (Reveal/Hide Answer), 0 / P / Space (Pass / Next), T (Reset timer)
       if (state.view === "rapid" && state.qid) {
         const key = e.key.toLowerCase();
         if (key === "1") {
@@ -345,6 +345,11 @@ export default function Admin() {
         if (key === "2") {
           e.preventDefault();
           act("rok", { team: 1 });
+          return;
+        }
+        if (key === "r") {
+          e.preventDefault();
+          act(state.revealed ? "rhide" : "reveal");
           return;
         }
         if (key === "0" || key === "p" || e.code === "Space") {

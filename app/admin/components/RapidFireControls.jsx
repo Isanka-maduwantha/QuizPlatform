@@ -1,4 +1,6 @@
 export default function RapidFireControls({
+  state,
+  revealed,
   teams,
   question,
   secondsLeft,
@@ -8,6 +10,7 @@ export default function RapidFireControls({
   remainingQuestions,
   perQuestionSeconds = 10,
 }) {
+  const isRevealed = Boolean(revealed ?? state?.revealed);
   const isTimeUp = secondsLeft === 0;
 
   return (
@@ -35,7 +38,14 @@ export default function RapidFireControls({
       </div>
       <div className="ad-q-preview">
         <p className="ad-q">{question ? question.text : "No more questions in this round"}</p>
-        <p className="rapid-fire-answer">Answer: {question?.answer_text}</p>
+        <p className="rapid-fire-answer">
+          Answer: {question?.answer_text || "—"}
+          {isRevealed && (
+            <span className="badge ok" style={{ marginLeft: 10, verticalAlign: "middle" }}>
+              ✓ Revealed to Audience
+            </span>
+          )}
+        </p>
       </div>
       <div className="ad-row">
         <button className="btn ta" onClick={() => onAction("rok", { team: 0 })}>
@@ -44,6 +54,15 @@ export default function RapidFireControls({
         <button className="btn tb" onClick={() => onAction("rok", { team: 1 })}>
           ✓ {teams[1].name} +{points} [2]
         </button>
+        {!isRevealed ? (
+          <button className="btn ok" onClick={() => onAction("reveal")}>
+            💡 Reveal Answer [R]
+          </button>
+        ) : (
+          <button className="btn ghost" onClick={() => onAction("rhide")}>
+            🙈 Hide Answer [R]
+          </button>
+        )}
         <button className="btn" onClick={() => onAction("rpass")}>
           Pass [0]
         </button>

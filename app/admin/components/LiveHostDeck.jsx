@@ -95,6 +95,8 @@ export default function LiveHostDeck({
         />
       ) : state.view === "rapid" ? (
         <RapidFireControls
+          state={state}
+          revealed={state.revealed}
           teams={teams}
           question={question}
           secondsLeft={secondsLeft}

@@ -225,12 +225,17 @@ export async function POST(req) {
       break;
     case 'timer':
       s.timerEnd = b.seconds > 0 ? Date.now() + b.seconds * 1000 : null;
+      if (s.view === 'rapid') s.revealed = false;
       break;
     case 'reveal':
+    case 'rreveal':
       s.revealed = true;
       s.timerEnd = null;
       s.turnPhase = 'completed';
       if (s.qid && !s.used.includes(s.qid)) s.used.push(s.qid);
+      break;
+    case 'rhide':
+      s.revealed = false;
       break;
     case 'resetChances':
       s.eliminatedOptions = [];
@@ -485,6 +490,7 @@ export async function POST(req) {
         s.got[b.team]++;
         if (!s.used.includes(s.qid)) s.used.push(s.qid);
         s.qid = await nextRapid(s);
+        s.revealed = false;
         if (s.qid) {
           const perQ = s.rapidSeconds || 10;
           s.timerEnd = !s.rapidManualTimer ? Date.now() + perQ * 1000 : null;
@@ -499,6 +505,7 @@ export async function POST(req) {
       if (s.view === 'rapid' && s.qid) {
         if (!s.used.includes(s.qid)) s.used.push(s.qid);
         s.qid = await nextRapid(s);
+        s.revealed = false;
         if (s.qid) {
           const perQ = s.rapidSeconds || 10;
           s.timerEnd = !s.rapidManualTimer ? Date.now() + perQ * 1000 : null;
@@ -514,6 +521,7 @@ export async function POST(req) {
       s.timerEnd = null;
       s.qid = null;
       s.lastAnswer = null;
+      s.revealed = false;
       break;
     case 'win':
       s.view = 'winner';
